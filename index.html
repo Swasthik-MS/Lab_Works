@@ -112,7 +112,6 @@
             border-bottom: 1px solid var(--border-color);
         }
         
-        /* LOGO STYLING (CSS-based) */
         .sidebar-logo a {
             display: flex;
             align-items: center;
@@ -120,16 +119,11 @@
             overflow: hidden;
         }
 
-        .sidebar-logo .logo-text {
-            font-size: 1.4rem; /* Slightly larger */
-            font-weight: 700; /* Bolder */
-            color: var(--text-primary);
-            white-space: nowrap;
+        .sidebar-logo img {
+            max-width: 100%;
+            height: auto;
+            max-height: 40px;
             transition: opacity var(--transition-speed) var(--transition-ease);
-        }
-        
-        .sidebar-logo .logo-text .logo-icon-text {
-            color: var(--logo-green);
         }
 
         .sidebar-nav {
@@ -175,6 +169,7 @@
         .sidebar-nav .nav-toggle span {
             opacity: 1;
             transition: opacity var(--transition-speed) var(--transition-ease);
+            flex-grow: 1;
         }
 
         .sidebar-nav .nav-link:hover,
@@ -325,8 +320,15 @@
             flex: 1;
             padding: 2.5rem;
             overflow-y: auto;
-            /* The user's original white BG was good, it creates a "page" */
             background-color: #ffffff; 
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
         }
 
         .card-container {
@@ -335,9 +337,8 @@
             gap: 2rem;
         }
 
-        /* --- IMPROVED PLANT CARD --- */
         .plant-card {
-            background-color: var(--sidebar-bg); /* White card */
+            background-color: var(--sidebar-bg);
             color: var(--text-primary);
             border-radius: var(--radius-lg);
             padding: 2rem;
@@ -361,10 +362,9 @@
             letter-spacing: 0.5px;
             z-index: 2;
             position: relative;
-            color: var(--primary-blue); /* Title is now theme color */
+            color: var(--primary-blue);
         }
 
-        /* Subtle background icon */
         .plant-card::after {
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
@@ -372,8 +372,8 @@
             right: 1rem;
             bottom: 0.5rem;
             font-size: 6rem;
-            color: var(--primary-blue); /* Use theme color */
-            opacity: 0.07; /* Make it very subtle */
+            color: var(--primary-blue);
+            opacity: 0.07;
             z-index: 1;
             transform: rotate(-10deg);
             transition: opacity 0.2s ease;
@@ -383,18 +383,77 @@
             opacity: 0.1;
         }
         
-        /* Unique icons per card */
         .plant-card.card-fernley::after {
-            content: "\f085"; /* Cogs */
+            content: "\f085";
         }
         
         .plant-card.card-winchester::after {
-             content: "\f49e"; /* Factory */
+             content: "\f49e";
+        }
+
+        /* Assign Lab Properties Page Styles */
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .custom-select-wrapper {
+            position: relative;
+        }
+
+        .custom-select {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            background-color: #fff;
+        }
+
+        .custom-select-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 var(--radius-md) var(--radius-md);
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .custom-select-options label {
+            display: block;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+        }
+
+        .custom-select-options label:hover {
+            background-color: var(--content-bg);
+        }
+
+        .custom-select-options input {
+            margin-right: 0.5rem;
         }
 
         /* -------------------------
          * DESKTOP: Collapsed Sidebar
-         * (Only applies on screens > 768px)
          * ------------------------- */
         @media (min-width: 768px) {
             body.sidebar-collapsed .sidebar {
@@ -406,7 +465,10 @@
                 padding: 0 0.5rem;
             }
 
-            /* Hide text spans */
+            body.sidebar-collapsed .sidebar-logo img {
+                opacity: 0;
+            }
+
             body.sidebar-collapsed .sidebar-nav .nav-link span,
             body.sidebar-collapsed .sidebar-nav .nav-toggle span,
             body.sidebar-collapsed .sidebar-nav .chevron-icon {
@@ -415,12 +477,6 @@
                 pointer-events: none;
             }
             
-            /* Hide logo text */
-            body.sidebar-collapsed .sidebar-logo .logo-text {
-                opacity: 0;
-            }
-            
-            /* Center icons */
             body.sidebar-collapsed .sidebar-nav .nav-link,
             body.sidebar-collapsed .sidebar-nav .nav-toggle {
                 justify-content: center;
@@ -433,19 +489,17 @@
                 margin-right: 0;
             }
             
-            /* Hide submenus when collapsed */
             body.sidebar-collapsed .submenu {
-                display: none !important; /* Force hide */
+                display: none !important;
             }
             body.sidebar-collapsed .nav-item.open .chevron-icon {
-                transform: rotate(0deg); /* Reset chevron */
+                transform: rotate(0deg);
             }
         }
 
 
         /* -------------------------
          * MOBILE: Responsive Styles
-         * (Applies on screens <= 767px)
          * ------------------------- */
         @media (max-width: 767px) {
             .sidebar {
@@ -458,10 +512,9 @@
             }
 
             .main-wrapper {
-                margin-left: 0 !important; /* Override desktop margin */
+                margin-left: 0 !important;
             }
 
-            /* JS-toggled class to show mobile sidebar */
             body.sidebar-mobile-open .sidebar {
                 transform: translateX(0);
             }
@@ -471,7 +524,6 @@
                 opacity: 1;
             }
 
-            /* Adjust header for mobile */
             .top-bar {
                 padding: 0 1rem;
             }
@@ -491,7 +543,6 @@
                 height: 36px;
             }
             
-            /* Adjust content padding for mobile */
             .content-area {
                 padding: 1.5rem;
             }
@@ -507,19 +558,15 @@
 
     <aside class="sidebar">
         <div class="sidebar-logo">
-             <!-- This CSS-based logo replaces the image and matches your CSS -->
-            <a href="dashboard.html" title="eQLM Dashboard Home">
-                <span class="logo-text">
-                    <span class="logo-icon-text">eQ</span>LM
-                </span>
+            <a href="#dashboard" title="eQLM Dashboard Home">
+                <img src="Assets/Images/qlm_new.png" alt="eQLM Logo" id="logo-image">
             </a>
         </div>
         
         <nav class="sidebar-nav">
             <ul>
-                <!-- Added 'active' class for default state -->
                 <li class="nav-item active">
-                    <a href="dashboard.html" class="nav-link">
+                    <a href="#dashboard" class="nav-link">
                         <i class="fa-solid fa-table-columns"></i>
                         <span>Dashboard</span>
                     </a>
@@ -532,9 +579,9 @@
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="labworks-overview.html" class="nav-link">Overview</a></li>
-                        <li class="nav-item"><a href="labworks-tests.html" class="nav-link">All Tests</a></li>
-                        <li class="nav-item"><a href="labworks-new.html" class="nav-link">New Test</a></li>
+                        <li class="nav-item"><a href="#labworks-overview" class="nav-link">Overview</a></li>
+                        <li class="nav-item"><a href="#labworks-tests" class="nav-link">All Tests</a></li>
+                        <li class="nav-item"><a href="#labworks-new" class="nav-link">New Test</a></li>
                     </ul>
                 </li>
 
@@ -545,8 +592,8 @@
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="users-all.html" class="nav-link">All Users</a></li>
-                        <li class="nav-item"><a href="users-roles.html" class="nav-link">Roles & Permissions</a></li>
+                        <li class="nav-item"><a href="#users-all" class="nav-link">All Users</a></li>
+                        <li class="nav-item"><a href="#users-roles" class="nav-link">Roles & Permissions</a></li>
                     </ul>
                 </li>
 
@@ -557,9 +604,10 @@
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="config-general.html" class="nav-link">General</a></li>
-                        <li class="nav-item"><a href="config-plants.html" class="nav-link">Plants</a></li>
-                        <li class="nav-item"><a href="config-modules.html" class="nav-link">Modules</a></li>
+                        <li class="nav-item"><a href="#application-setting" class="nav-link">Application setting</a></li>
+                        <li class="nav-item"><a href="#workflows" class="nav-link">Workflows</a></li>
+                        <li class="nav-item"><a href="#email-templates" class="nav-link">Email Templates</a></li>
+                        <li class="nav-item"><a href="#assign-lab-properties" class="nav-link">Assign Lab Properties</a></li>
                     </ul>
                 </li>
 
@@ -570,15 +618,14 @@
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="reports-quality.html" class="nav-link">Quality Reports</a></li>
-                        <li class="nav-item"><a href="reports-usage.html" class="nav-link">Usage Reports</a></li>
+                        <li class="nav-item"><a href="#reports-quality" class="nav-link">Quality Reports</a></li>
+                        <li class="nav-item"><a href="#reports-usage" class="nav-link">Usage Reports</a></li>
                     </ul>
                 </li>
             </ul>
         </nav>
     </aside>
 
-    <!-- Overlay for mobile sidebar -->
     <div id="page-overlay"></div>
 
     <div class="main-wrapper">
@@ -596,69 +643,198 @@
         </header>
 
         <main class="content-area">
-            <div class="card-container">
-                <!-- Added new classes for styling -->
-                <a href="plant-fernley.html" class="plant-card card-fernley">
-                    <span>FERNLEY</span>
-                </a>
-                <a href="plant-winchester.html" class="plant-card card-winchester">
-                    <span>WINCHESTER</span>
-                </a>
-                <!-- You can add more cards here -->
+            <div id="dashboard" class="page active">
+                <div class="card-container">
+                    <a href="#plant-fernley" class="plant-card card-fernley">
+                        <span>FERNLEY</span>
+                    </a>
+                    <a href="#plant-winchester" class="plant-card card-winchester">
+                        <span>WINCHESTER</span>
+                    </a>
+                </div>
+            </div>
+
+            <div id="assign-lab-properties" class="page">
+                <h2>Assign Lab Properties</h2>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label for="select-lab">Select Lab</label>
+                        <select id="select-lab" class="custom-select">
+                            <option>Embossing</option>
+                            <option>Shell Thickness</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="select-plant">Select Plant</label>
+                        <div class="custom-select-wrapper">
+                            <div class="custom-select" data-target="plant-options">
+                                <span class="selected-options">All selected</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div id="plant-options" class="custom-select-options">
+                                <label><input type="checkbox" value="Winchester" checked> Winchester</label>
+                                <label><input type="checkbox" value="Fernley" checked> Fernley</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="select-section">Select Section</label>
+                        <div class="custom-select-wrapper">
+                            <div class="custom-select" data-target="section-options">
+                                <span class="selected-options">All selected</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div id="section-options" class="custom-select-options">
+                                <label><input type="checkbox" value="Decking" checked> Decking</label>
+                                <label><input type="checkbox" value="Railing" checked> Railing</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="select-building">Select Building</label>
+                        <div class="custom-select-wrapper">
+                            <div class="custom-select" data-target="building-options">
+                                <span class="selected-options">All selected</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div id="building-options" class="custom-select-options">
+                                <label><input type="checkbox" value="Building 1" checked> Building 1</label>
+                                <label><input type="checkbox" value="Building 3" checked> Building 3</label>
+                                <label><input type="checkbox" value="Building 4" checked> Building 4</label>
+                                <label><input type="checkbox" value="Building 6" checked> Building 6</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="application-setting" class="page">
+                <h2>Application Settings</h2>
+                <p>Upload a new logo for the application.</p>
+                <input type="file" id="logo-upload" accept="image/*">
             </div>
         </main>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const toggles = document.querySelectorAll('.nav-toggle');
+            const navLinks = document.querySelectorAll('.sidebar-nav .nav-link, .sidebar-nav .nav-toggle');
+            const pages = document.querySelectorAll('.page');
+            const pageTitle = document.querySelector('.page-title');
             const sidebarToggleBtn = document.getElementById('sidebar-toggle');
             const pageOverlay = document.getElementById('page-overlay');
             const mobileBreakpoint = 767;
 
-            // --- Logic for Submenu Toggles ---
-            toggles.forEach(toggle => {
-                toggle.addEventListener('click', function() {
-                    // Prevent opening submenu if sidebar is collapsed on desktop
-                    if (document.body.classList.contains('sidebar-collapsed') && window.innerWidth > mobileBreakpoint) {
-                        return;
-                    }
+            function showPage(pageId) {
+                pages.forEach(page => {
+                    page.classList.remove('active');
+                });
+                const newPage = document.getElementById(pageId);
+                if (newPage) {
+                    newPage.classList.add('active');
+                    pageTitle.textContent = newPage.querySelector('h2').textContent;
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const parentNavItem = this.closest('.nav-item');
                     
-                    const navItem = this.closest('.nav-item');
-                    navItem.classList.toggle('open');
+                    if (this.classList.contains('nav-toggle')) {
+                        if (document.body.classList.contains('sidebar-collapsed') && window.innerWidth > mobileBreakpoint) {
+                            return;
+                        }
+                        parentNavItem.classList.toggle('open');
+                    } else {
+                        const pageId = this.getAttribute('href').substring(1);
+                        showPage(pageId);
+
+                        document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+                            item.classList.remove('active');
+                        });
+                        parentNavItem.classList.add('active');
+                        // Also add active to parent of submenu item
+                        if (parentNavItem.closest('.submenu')) {
+                            parentNavItem.closest('.submenu').closest('.nav-item').classList.add('active');
+                        }
+                    }
                 });
             });
-            
-            // --- Logic for Main Sidebar Toggle (Handles both Desktop and Mobile) ---
+
             sidebarToggleBtn.addEventListener('click', function() {
                 if (window.innerWidth > mobileBreakpoint) {
-                    // Desktop: Toggle collapsed class
                     document.body.classList.toggle('sidebar-collapsed');
-                    
-                    // If we are collapsing the sidebar, close all open submenus
                     if (document.body.classList.contains('sidebar-collapsed')) {
                         document.querySelectorAll('.nav-item.open').forEach(item => {
                             item.classList.remove('open');
                         });
                     }
                 } else {
-                    // Mobile: Toggle overlay class
                     document.body.classList.toggle('sidebar-mobile-open');
                 }
             });
 
-            // --- Logic for Mobile Overlay Click ---
             pageOverlay.addEventListener('click', function() {
                 document.body.classList.remove('sidebar-mobile-open');
             });
 
-            // --- Resize Handler ---
-            // Close mobile sidebar if window is resized larger
             window.addEventListener('resize', function() {
                 if (window.innerWidth > mobileBreakpoint) {
                     document.body.classList.remove('sidebar-mobile-open');
                 }
             });
+
+            // Multi-select dropdown logic
+            document.querySelectorAll('.custom-select').forEach(select => {
+                const optionsContainer = document.getElementById(select.dataset.target);
+                if (!optionsContainer) return;
+
+                select.addEventListener('click', () => {
+                    optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
+                });
+
+                optionsContainer.addEventListener('change', () => {
+                    const selected = Array.from(optionsContainer.querySelectorAll('input:checked')).map(el => el.value);
+                    const selectedSpan = select.querySelector('.selected-options');
+                    if (selected.length === 0) {
+                        selectedSpan.textContent = 'None selected';
+                    } else if (selected.length === optionsContainer.querySelectorAll('input').length) {
+                        selectedSpan.textContent = 'All selected';
+                    } else {
+                        selectedSpan.textContent = selected.join(', ');
+                    }
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.custom-select-wrapper')) {
+                    document.querySelectorAll('.custom-select-options').forEach(options => {
+                        options.style.display = 'none';
+                    });
+                }
+            });
+
+            // Logo upload
+            const logoUpload = document.getElementById('logo-upload');
+            const logoImage = document.getElementById('logo-image');
+            logoUpload.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        logoImage.src = e.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Initial page load
+            const initialPage = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
+            showPage(initialPage);
+            const initialLink = document.querySelector(`.nav-link[href="#${initialPage}"]`);
+            if(initialLink){
+                initialLink.closest('.nav-item').classList.add('active');
+            }
         });
     </script>
 
