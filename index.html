@@ -1,1 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eQLM Plant Dashboard</title>
+    
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <style>
+        /* -------------------------
+         * Global Resets & Setup
+         * ------------------------- */
+        :root {
+            --primary-blue: #4A69E2; /* A more modern, softer blue */
+            --primary-hover: #3b55b5;
+            --logo-green: #90be44;
+            --sidebar-bg: #ffffff;
+            --content-bg: #f8f9fc; /* Slightly cooler gray */
+            --header-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            
+            --sidebar-width: 260px;
+            --sidebar-width-collapsed: 80px;
+            --header-height: 65px;
+
+            --transition-speed: 0.3s;
+            --transition-ease: ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--content-bg);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+
+        /* Custom Scrollbar for a polished look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        /* -------------------------
+         * Page Overlay (for Mobile)
+         * ------------------------- */
+        #page-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 998;
+            transition: opacity var(--transition-speed) var(--transition-ease);
+        }
+
+        /* -------------------------
+         * Sidebar Navigation
+         * ------------------------- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: width var(--transition-speed) var(--transition-ease), 
+                        transform var(--transition-speed) var(--transition-ease);
+            z-index: 999;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; /* Align left by default */
+            padding: 0 1.75rem; /* Increased padding */
+            height: var(--header-height);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* LOGO STYLING (CSS-based) */
+        .sidebar-logo a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            overflow: hidden;
+        }
+
+        .sidebar-logo .logo-text {
+            font-size: 1.4rem; /* Slightly larger */
+            font-weight: 700; /* Bolder */
+            color: var(--text-primary);
+            white-space: nowrap;
+            transition: opacity var(--transition-speed) var(--transition-ease);
+        }
+        
+        .sidebar-logo .logo-text .logo-icon-text {
+            color: var(--logo-green);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+        }
+
+        .sidebar-nav .nav-item {
+            margin: 0.25rem 0.75rem;
+        }
+
+        .sidebar-nav .nav-link,
+        .sidebar-nav .nav-toggle {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .sidebar-nav .nav-link i,
+        .sidebar-nav .nav-toggle i {
+            font-size: 1.1rem;
+            width: 30px;
+            margin-right: 15px;
+            text-align: center;
+            flex-shrink: 0;
+            transition: color 0.2s;
+        }
+        
+        .sidebar-nav .nav-link span,
+        .sidebar-nav .nav-toggle span {
+            opacity: 1;
+            transition: opacity var(--transition-speed) var(--transition-ease);
+        }
+
+        .sidebar-nav .nav-link:hover,
+        .sidebar-nav .nav-toggle:hover {
+            background-color: var(--content-bg);
+            color: var(--text-primary);
+        }
+        
+        .sidebar-nav .nav-toggle {
+            justify-content: space-between;
+        }
+        
+        .sidebar-nav .chevron-icon {
+            font-size: 0.8rem;
+            transition: transform 0.2s ease, opacity var(--transition-speed) ease;
+            opacity: 1;
+        }
+
+        /* Active State */
+        .sidebar-nav .nav-item.active > .nav-link,
+        .sidebar-nav .nav-item.active > .nav-toggle {
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-nav .nav-item.active > .nav-link i,
+        .sidebar-nav .nav-item.active > .nav-toggle i {
+            color: #ffffff;
+        }
+
+
+        /* Submenu styles */
+        .submenu {
+            display: none;
+            padding-left: 2.75rem; /* Indentation */
+        }
+
+        .submenu .nav-link {
+            padding-top: 0.6rem;
+            padding-bottom: 0.6rem;
+            font-size: 0.9rem;
+        }
+        
+        .submenu .nav-link:hover {
+             background-color: transparent;
+             color: var(--primary-blue);
+        }
+        
+        .submenu .nav-item.active .nav-link {
+            color: var(--primary-blue);
+            font-weight: 600;
+            background-color: transparent;
+        }
+
+        /* JS-toggled 'open' class */
+        .nav-item.open > .submenu {
+            display: block;
+        }
+
+        .nav-item.open > .nav-toggle .chevron-icon {
+            transform: rotate(90deg);
+        }
+
+        /* -------------------------
+         * Main Content Area
+         * ------------------------- */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: margin-left var(--transition-speed) var(--transition-ease);
+        }
+
+        /* -------------------------
+         * Top Bar (Header)
+         * ------------------------- */
+        .top-bar {
+            height: var(--header-height);
+            background: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            flex-shrink: 0;
+        }
+        
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .icon-btn {
+            font-size: 1.1rem; /* Standardized icon size */
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            transition: color 0.2s, background-color 0.2s;
+        }
+        
+        .icon-btn:hover {
+            color: var(--text-primary);
+            background-color: var(--content-bg);
+        }
+        
+        #sidebar-toggle {
+            font-size: 1.25rem;
+        }
+
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Reduced gap for a tighter look */
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* -------------------------
+         * Main Content
+         * ------------------------- */
+        .content-area {
+            flex: 1;
+            padding: 2.5rem;
+            overflow-y: auto;
+            /* The user's original white BG was good, it creates a "page" */
+            background-color: #ffffff; 
+        }
+
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        /* --- IMPROVED PLANT CARD --- */
+        .plant-card {
+            background-color: var(--sidebar-bg); /* White card */
+            color: var(--text-primary);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .plant-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-blue);
+        }
+
+        .plant-card span {
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            z-index: 2;
+            position: relative;
+            color: var(--primary-blue); /* Title is now theme color */
+        }
+
+        /* Subtle background icon */
+        .plant-card::after {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 1rem;
+            bottom: 0.5rem;
+            font-size: 6rem;
+            color: var(--primary-blue); /* Use theme color */
+            opacity: 0.07; /* Make it very subtle */
+            z-index: 1;
+            transform: rotate(-10deg);
+            transition: opacity 0.2s ease;
+        }
+        
+        .plant-card:hover::after {
+            opacity: 0.1;
+        }
+        
+        /* Unique icons per card */
+        .plant-card.card-fernley::after {
+            content: "\f085"; /* Cogs */
+        }
+        
+        .plant-card.card-winchester::after {
+             content: "\f49e"; /* Factory */
+        }
+
+        /* -------------------------
+         * DESKTOP: Collapsed Sidebar
+         * (Only applies on screens > 768px)
+         * ------------------------- */
+        @media (min-width: 768px) {
+            body.sidebar-collapsed .sidebar {
+                width: var(--sidebar-width-collapsed);
+            }
+
+            body.sidebar-collapsed .sidebar-logo {
+                justify-content: center;
+                padding: 0 0.5rem;
+            }
+
+            /* Hide text spans */
+            body.sidebar-collapsed .sidebar-nav .nav-link span,
+            body.sidebar-collapsed .sidebar-nav .nav-toggle span,
+            body.sidebar-collapsed .sidebar-nav .chevron-icon {
+                opacity: 0;
+                width: 0;
+                pointer-events: none;
+            }
+            
+            /* Hide logo text */
+            body.sidebar-collapsed .sidebar-logo .logo-text {
+                opacity: 0;
+            }
+            
+            /* Center icons */
+            body.sidebar-collapsed .sidebar-nav .nav-link,
+            body.sidebar-collapsed .sidebar-nav .nav-toggle {
+                justify-content: center;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            body.sidebar-collapsed .sidebar-nav .nav-link i,
+            body.sidebar-collapsed .sidebar-nav .nav-toggle i {
+                margin-right: 0;
+            }
+            
+            /* Hide submenus when collapsed */
+            body.sidebar-collapsed .submenu {
+                display: none !important; /* Force hide */
+            }
+            body.sidebar-collapsed .nav-item.open .chevron-icon {
+                transform: rotate(0deg); /* Reset chevron */
+            }
+        }
+
+
+        /* -------------------------
+         * MOBILE: Responsive Styles
+         * (Applies on screens <= 767px)
+         * ------------------------- */
+        @media (max-width: 767px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                box-shadow: var(--shadow-md);
+            }
+
+            .main-wrapper {
+                margin-left: 0 !important; /* Override desktop margin */
+            }
+
+            /* JS-toggled class to show mobile sidebar */
+            body.sidebar-mobile-open .sidebar {
+                transform: translateX(0);
+            }
+
+            body.sidebar-mobile-open #page-overlay {
+                display: block;
+                opacity: 1;
+            }
+
+            /* Adjust header for mobile */
+            .top-bar {
+                padding: 0 1rem;
+            }
+            .page-title {
+                font-size: 1.25rem;
+            }
+            .user-controls {
+                gap: 0.5rem;
+            }
+            .user-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 0.8rem;
+            }
+            .icon-btn {
+                width: 36px;
+                height: 36px;
+            }
+            
+            /* Adjust content padding for mobile */
+            .content-area {
+                padding: 1.5rem;
+            }
+            
+            .card-container {
+                gap: 1.5rem;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+             <!-- This CSS-based logo replaces the image and matches your CSS -->
+            <a href="dashboard.html" title="eQLM Dashboard Home">
+                <span class="logo-text">
+                    <span class="logo-icon-text">eQ</span>LM
+                </span>
+            </a>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <!-- Added 'active' class for default state -->
+                <li class="nav-item active">
+                    <a href="dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-table-columns"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-toggle">
+                        <i class="fa-solid fa-flask"></i>
+                        <span>LabWorks</span>
+                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                        <li class="nav-item"><a href="labworks-overview.html" class="nav-link">Overview</a></li>
+                        <li class="nav-item"><a href="labworks-tests.html" class="nav-link">All Tests</a></li>
+                        <li class="nav-item"><a href="labworks-new.html" class="nav-link">New Test</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-toggle">
+                        <i class="fa-solid fa-users"></i>
+                        <span>User Management</span>
+                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                        <li class="nav-item"><a href="users-all.html" class="nav-link">All Users</a></li>
+                        <li class="nav-item"><a href="users-roles.html" class="nav-link">Roles & Permissions</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-toggle">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Configuration</span>
+                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                        <li class="nav-item"><a href="config-general.html" class="nav-link">General</a></li>
+                        <li class="nav-item"><a href="config-plants.html" class="nav-link">Plants</a></li>
+                        <li class="nav-item"><a href="config-modules.html" class="nav-link">Modules</a></li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-toggle">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Reports</span>
+                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
+                    </a>
+                    <ul class="submenu">
+                        <li class="nav-item"><a href="reports-quality.html" class="nav-link">Quality Reports</a></li>
+                        <li class="nav-item"><a href="reports-usage.html" class="nav-link">Usage Reports</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="page-overlay"></div>
+
+    <div class="main-wrapper">
+
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <i class="fa-solid fa-bars icon-btn" id="sidebar-toggle"></i>
+                <h1 class="page-title">Plant Dashboard</h1>
+            </div>
+            <div class="user-controls">
+                <i class="fa-solid fa-search icon-btn"></i>
+                <i class="fa-solid fa-bell icon-btn"></i>
+                <div class="user-avatar">SM</div>
+            </div>
+        </header>
+
+        <main class="content-area">
+            <div class="card-container">
+                <!-- Added new classes for styling -->
+                <a href="plant-fernley.html" class="plant-card card-fernley">
+                    <span>FERNLEY</span>
+                </a>
+                <a href="plant-winchester.html" class="plant-card card-winchester">
+                    <span>WINCHESTER</span>
+                </a>
+                <!-- You can add more cards here -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggles = document.querySelectorAll('.nav-toggle');
+            const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+            const pageOverlay = document.getElementById('page-overlay');
+            const mobileBreakpoint = 767;
+
+            // --- Logic for Submenu Toggles ---
+            toggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    // Prevent opening submenu if sidebar is collapsed on desktop
+                    if (document.body.classList.contains('sidebar-collapsed') && window.innerWidth > mobileBreakpoint) {
+                        return;
+                    }
+                    
+                    const navItem = this.closest('.nav-item');
+                    navItem.classList.toggle('open');
+                });
+            });
+            
+            // --- Logic for Main Sidebar Toggle (Handles both Desktop and Mobile) ---
+            sidebarToggleBtn.addEventListener('click', function() {
+                if (window.innerWidth > mobileBreakpoint) {
+                    // Desktop: Toggle collapsed class
+                    document.body.classList.toggle('sidebar-collapsed');
+                    
+                    // If we are collapsing the sidebar, close all open submenus
+                    if (document.body.classList.contains('sidebar-collapsed')) {
+                        document.querySelectorAll('.nav-item.open').forEach(item => {
+                            item.classList.remove('open');
+                        });
+                    }
+                } else {
+                    // Mobile: Toggle overlay class
+                    document.body.classList.toggle('sidebar-mobile-open');
+                }
+            });
+
+            // --- Logic for Mobile Overlay Click ---
+            pageOverlay.addEventListener('click', function() {
+                document.body.classList.remove('sidebar-mobile-open');
+            });
+
+            // --- Resize Handler ---
+            // Close mobile sidebar if window is resized larger
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > mobileBreakpoint) {
+                    document.body.classList.remove('sidebar-mobile-open');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
