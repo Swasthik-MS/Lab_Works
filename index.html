@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eQLM Plant Dashboard</title>
+    <title>eQLM Plant Dashboard Prototype</title>
     
-    <!-- Google Font: Inter -->
+    <!-- Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -18,28 +16,24 @@
          * Global Resets & Setup
          * ------------------------- */
         :root {
-            --primary-blue: #4A69E2; /* A more modern, softer blue */
-            --primary-hover: #3b55b5;
-            --logo-green: #90be44;
+            --primary-blue: #4A65E2; /* A fresh, modern blue */
+            --primary-hover: #4058C3;
             --sidebar-bg: #ffffff;
-            --content-bg: #f8f9fc; /* Slightly cooler gray */
+            --content-bg: #f7f8fa;
             --header-bg: #ffffff;
-            --border-color: #dee2e6;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-
+            --border-color: #e9ecef;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-on-primary: #ffffff;
+            --radius-sm: 4px;
             --radius-md: 8px;
             --radius-lg: 12px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             
             --sidebar-width: 260px;
-            --sidebar-width-collapsed: 80px;
+            --sidebar-width-collapsed: 88px; /* 80px + 8px padding */
             --header-height: 65px;
-
-            --transition-speed: 0.3s;
-            --transition-ease: ease;
         }
 
         * {
@@ -57,36 +51,35 @@
             color: var(--text-primary);
         }
 
-        /* Custom Scrollbar for a polished look */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        /* -------------------------
+         * Toast Notification (New)
+         * ------------------------- */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745; /* Success green */
+            color: #ffffff;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .toast-notification.show {
+            transform: translateX(0);
         }
-        ::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 10px;
+        .toast-notification i {
+            font-size: 1.25rem;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #aaa;
+        .toast-notification span {
+            font-weight: 600;
         }
 
-        /* -------------------------
-         * Page Overlay (for Mobile)
-         * ------------------------- */
-        #page-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 998;
-            transition: opacity var(--transition-speed) var(--transition-ease);
-        }
 
         /* -------------------------
          * Sidebar Navigation
@@ -98,37 +91,35 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
-            transition: width var(--transition-speed) var(--transition-ease), 
-                        transform var(--transition-speed) var(--transition-ease);
-            z-index: 999;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
         }
 
         .sidebar-logo {
             display: flex;
             align-items: center;
-            justify-content: flex-start; /* Align left by default */
-            padding: 0 1.75rem; /* Increased padding */
+            justify-content: flex-start; /* Align left */
+            padding: 0 1.5rem;
             height: var(--header-height);
             border-bottom: 1px solid var(--border-color);
+            overflow: hidden;
         }
         
         .sidebar-logo a {
             display: flex;
             align-items: center;
             text-decoration: none;
-            overflow: hidden;
         }
 
         .sidebar-logo img {
-            max-width: 100%;
-            height: auto;
-            max-height: 40px;
-            transition: opacity var(--transition-speed) var(--transition-ease);
+            max-height: 36px;
+            width: auto;
+            transition: opacity 0.3s ease;
         }
 
         .sidebar-nav {
             flex: 1;
-            padding: 1rem 0;
+            padding: 1rem 0.5rem; /* Padding for nav items */
             overflow-y: auto;
             overflow-x: hidden;
         }
@@ -138,13 +129,14 @@
         }
 
         .sidebar-nav .nav-item {
-            margin: 0.25rem 0.75rem;
+            margin-bottom: 0.25rem;
         }
 
         .sidebar-nav .nav-link,
         .sidebar-nav .nav-toggle {
             display: flex;
             align-items: center;
+            justify-content: space-between; /* For chevron */
             padding: 0.8rem 1rem;
             border-radius: var(--radius-md);
             text-decoration: none;
@@ -155,12 +147,19 @@
             cursor: pointer;
         }
 
+        .sidebar-nav .nav-link-inner,
+        .sidebar-nav .nav-toggle-inner {
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
         .sidebar-nav .nav-link i,
         .sidebar-nav .nav-toggle i {
             font-size: 1.1rem;
             width: 30px;
-            margin-right: 15px;
             text-align: center;
+            margin-right: 15px;
             flex-shrink: 0;
             transition: color 0.2s;
         }
@@ -168,8 +167,8 @@
         .sidebar-nav .nav-link span,
         .sidebar-nav .nav-toggle span {
             opacity: 1;
-            transition: opacity var(--transition-speed) var(--transition-ease);
-            flex-grow: 1;
+            transition: opacity 0.3s ease;
+            font-size: 0.95rem;
         }
 
         .sidebar-nav .nav-link:hover,
@@ -178,51 +177,45 @@
             color: var(--text-primary);
         }
         
-        .sidebar-nav .nav-toggle {
-            justify-content: space-between;
+        .sidebar-nav .nav-link.active,
+        .sidebar-nav .nav-item.open > .nav-toggle {
+            background-color: var(--primary-blue);
+            color: var(--text-on-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-nav .nav-link.active i,
+        .sidebar-nav .nav-item.open > .nav-toggle i {
+            color: var(--text-on-primary);
         }
         
         .sidebar-nav .chevron-icon {
             font-size: 0.8rem;
-            transition: transform 0.2s ease, opacity var(--transition-speed) ease;
+            transition: transform 0.2s ease, opacity 0.3s ease;
             opacity: 1;
         }
-
-        /* Active State */
-        .sidebar-nav .nav-item.active > .nav-link,
-        .sidebar-nav .nav-item.active > .nav-toggle {
-            background-color: var(--primary-blue);
-            color: #ffffff;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .sidebar-nav .nav-item.active > .nav-link i,
-        .sidebar-nav .nav-item.active > .nav-toggle i {
-            color: #ffffff;
-        }
-
 
         /* Submenu styles */
         .submenu {
             display: none;
-            padding-left: 2.75rem; /* Indentation */
+            padding-left: 1.25rem; /* Indentation */
+            margin-top: 0.25rem;
         }
 
         .submenu .nav-link {
             padding-top: 0.6rem;
             padding-bottom: 0.6rem;
             font-size: 0.9rem;
+            padding-left: 2.5rem; /* Icon indentation + text */
         }
         
-        .submenu .nav-link:hover {
-             background-color: transparent;
-             color: var(--primary-blue);
-        }
-        
-        .submenu .nav-item.active .nav-link {
+        .submenu .nav-link.active {
             color: var(--primary-blue);
-            font-weight: 600;
-            background-color: transparent;
+            background-color: var(--content-bg);
+        }
+
+        .submenu .nav-link.active i {
+             color: var(--primary-blue);
         }
 
         /* JS-toggled 'open' class */
@@ -234,6 +227,7 @@
             transform: rotate(90deg);
         }
 
+
         /* -------------------------
          * Main Content Area
          * ------------------------- */
@@ -242,7 +236,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: margin-left var(--transition-speed) var(--transition-ease);
+            transition: margin-left 0.3s ease;
         }
 
         /* -------------------------
@@ -255,8 +249,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 2rem;
+            padding: 0 1rem 0 1.5rem;
             flex-shrink: 0;
+            z-index: 900;
+        }
+        
+        @media (min-width: 768px) {
+            .top-bar {
+                padding: 0 2rem;
+            }
         }
         
         .top-bar-left {
@@ -271,16 +272,12 @@
         }
 
         .icon-btn {
-            font-size: 1.1rem; /* Standardized icon size */
+            font-size: 1.25rem;
             color: var(--text-secondary);
             cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            transition: color 0.2s;
+            padding: 0.5rem;
             border-radius: var(--radius-md);
-            transition: color 0.2s, background-color 0.2s;
         }
         
         .icon-btn:hover {
@@ -289,13 +286,13 @@
         }
         
         #sidebar-toggle {
-            font-size: 1.25rem;
+            font-size: 1.4rem;
         }
 
         .user-controls {
             display: flex;
             align-items: center;
-            gap: 1rem; /* Reduced gap for a tighter look */
+            gap: 1.5rem;
         }
 
         .user-avatar {
@@ -310,7 +307,6 @@
             font-weight: 600;
             font-size: 0.9rem;
             cursor: pointer;
-            box-shadow: var(--shadow-sm);
         }
 
         /* -------------------------
@@ -318,19 +314,17 @@
          * ------------------------- */
         .content-area {
             flex: 1;
-            padding: 2.5rem;
+            padding: 1.5rem;
             overflow-y: auto;
-            background-color: #ffffff; 
         }
-
-        .page {
-            display: none;
+        
+        @media (min-width: 768px) {
+            .content-area {
+                padding: 2.5rem;
+            }
         }
-
-        .page.active {
-            display: block;
-        }
-
+        
+        /* Dashboard Card Styles */
         .card-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -338,22 +332,20 @@
         }
 
         .plant-card {
-            background-color: var(--sidebar-bg);
-            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-hover) 100%);
+            color: #ffffff;
             border-radius: var(--radius-lg);
             padding: 2rem;
             text-decoration: none;
             position: relative;
             overflow: hidden;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .plant-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--primary-blue);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
 
         .plant-card span {
@@ -362,100 +354,416 @@
             letter-spacing: 0.5px;
             z-index: 2;
             position: relative;
-            color: var(--primary-blue);
         }
 
         .plant-card::after {
+            content: "\f013"; /* Gear icon */
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
             position: absolute;
             right: 1rem;
             bottom: 0.5rem;
             font-size: 6rem;
-            color: var(--primary-blue);
-            opacity: 0.07;
+            color: rgba(255, 255, 255, 0.1);
             z-index: 1;
             transform: rotate(-10deg);
-            transition: opacity 0.2s ease;
         }
         
-        .plant-card:hover::after {
-            opacity: 0.1;
+        /* -------------------------
+         * Form & Page Content Styles
+         * ------------------------- */
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
-        .plant-card.card-fernley::after {
-            content: "\f085";
-        }
-        
-        .plant-card.card-winchester::after {
-             content: "\f49e";
-        }
-
-        /* Assign Lab Properties Page Styles */
         .form-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+            max-width: 600px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
         }
 
         .form-group {
-            display: flex;
-            flex-direction: column;
+            margin-bottom: 1.5rem;
         }
 
         .form-group label {
-            font-weight: 500;
+            display: block;
+            font-weight: 600;
             margin-bottom: 0.5rem;
+            font-size: 0.9rem;
         }
 
-        .custom-select-wrapper {
+        .form-group select,
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: #ffffff;
+            appearance: none;
+        }
+        
+        .form-group select:focus,
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(74, 105, 226, 0.2);
+        }
+        
+        .form-group.select-group {
             position: relative;
         }
+        
+        .form-group.select-group::after {
+            content: '\f078'; /* chevron-down */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            right: 1rem;
+            top: 60%;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
 
-        .custom-select {
+        /* Custom Multi-Select Dropdown */
+        .custom-multiselect {
+            position: relative;
+        }
+        
+        .multiselect-display {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: #ffffff;
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            background-color: #fff;
+        }
+        
+        .multiselect-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 1rem;
         }
 
-        .custom-select-options {
+        .multiselect-display::after {
+            content: '\f078'; /* chevron-down */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            transition: transform 0.2s ease;
+        }
+        
+        .custom-multiselect.open .multiselect-display::after {
+            transform: rotate(180deg);
+        }
+        
+        .multiselect-options {
             display: none;
             position: absolute;
-            top: 100%;
+            top: calc(100% + 4px);
             left: 0;
-            right: 0;
-            background-color: #fff;
+            width: 100%;
+            background: #ffffff;
             border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 var(--radius-md) var(--radius-md);
-            z-index: 10;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            z-index: 100;
             max-height: 200px;
             overflow-y: auto;
         }
-
-        .custom-select-options label {
+        
+        .custom-multiselect.open .multiselect-options {
             display: block;
+        }
+        
+        .multiselect-option {
             padding: 0.75rem 1rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
-
-        .custom-select-options label:hover {
+        
+        .multiselect-option:hover {
             background-color: var(--content-bg);
         }
-
-        .custom-select-options input {
-            margin-right: 0.5rem;
+        
+        .multiselect-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary-blue);
         }
+        
+        /* Application Settings Page */
+        .logo-uploader-container {
+             display: flex;
+             flex-direction: column;
+             align-items: center;
+             gap: 1.5rem;
+        }
+        
+        .logo-preview {
+            width: 200px;
+            height: 80px;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--content-bg);
+            padding: 1rem;
+        }
+        
+        .logo-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .logo-preview .placeholder {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            background-color: #f0f3ff;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .upload-btn:hover {
+            background-color: #e4e9ff;
+        }
+        
+        /* -------------------------
+         * GEMINI AI GENERATOR STYLES
+         * ------------------------- */
+        .page-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .page-grid {
+                /* 60/40 split on desktop */
+                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+            }
+        }
+
+        .generator-container, .saved-items-container {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        @media (min-width: 768px) {
+             .generator-container, .saved-items-container {
+                 padding: 2rem;
+             }
+        }
+
+        .generator-container h3, .saved-items-container h3 {
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .generator-input, textarea.generator-input, textarea.generator-result {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+        }
+
+        textarea.generator-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        textarea.generator-result {
+            min-height: 250px;
+            background-color: var(--content-bg);
+            color: var(--text-primary);
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .gemini-btn, .save-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: var(--primary-blue);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .gemini-btn:hover, .save-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .gemini-btn:disabled, .save-btn:disabled {
+            background-color: #b0bce1;
+            cursor: not-allowed;
+        }
+        
+        .gemini-btn i.fa-spinner {
+            display: none;
+        }
+        
+        .gemini-btn.loading i.fa-wand-magic-sparkles {
+            display: none;
+        }
+        .gemini-btn.loading i.fa-spinner {
+            display: inline-block;
+        }
+
+        .save-btn {
+            background-color: #1a7f37; /* Green save button */
+            margin-top: 0.5rem;
+        }
+        
+        .save-btn:hover {
+            background-color: #15692e;
+        }
+        
+        .save-btn i.fa-spinner {
+            display: none;
+        }
+        .save-btn.loading i.fa-save {
+            display: none;
+        }
+        .save-btn.loading i.fa-spinner {
+            display: inline-block;
+        }
+
+        /* Saved Items List */
+        .saved-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .saved-item-placeholder {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            text-align: center;
+            padding: 2rem 0;
+        }
+        
+        .saved-item {
+            background: var(--content-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .saved-item.email .item-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        
+        .saved-item.email .item-body {
+            font-weight: 400;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+        /* -------------------------
+         * MOBILE: Collapsed Sidebar
+         * ------------------------- */
+        .page-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        @media (max-width: 767px) {
+            .sidebar {
+                position: fixed;
+                height: 100%;
+                transform: translateX(-100%);
+            }
+            
+            body.sidebar-mobile-open .sidebar {
+                transform: translateX(0);
+            }
+            
+            body.sidebar-mobile-open .page-overlay {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            /* Hide toggle on mobile, it's in the header */
+            #sidebar-toggle-desktop {
+                display: none;
+            }
+        }
+        
 
         /* -------------------------
          * DESKTOP: Collapsed Sidebar
          * ------------------------- */
         @media (min-width: 768px) {
+            /* Hide mobile-only toggle */
+            #sidebar-toggle-mobile {
+                display: none;
+            }
+            
             body.sidebar-collapsed .sidebar {
                 width: var(--sidebar-width-collapsed);
             }
@@ -464,11 +772,27 @@
                 justify-content: center;
                 padding: 0 0.5rem;
             }
-
+            
             body.sidebar-collapsed .sidebar-logo img {
-                opacity: 0;
+                max-height: 32px;
             }
 
+            body.sidebar-collapsed .sidebar-nav .nav-link,
+            body.sidebar-collapsed .sidebar-nav .nav-toggle {
+                justify-content: center;
+            }
+
+            body.sidebar-collapsed .sidebar-nav .nav-link-inner,
+            body.sidebar-collapsed .sidebar-nav .nav-toggle-inner {
+                justify-content: center;
+                width: 100%;
+            }
+
+            body.sidebar-collapsed .sidebar-nav .nav-link i,
+            body.sidebar-collapsed .sidebar-nav .nav-toggle i {
+                margin-right: 0;
+            }
+            
             body.sidebar-collapsed .sidebar-nav .nav-link span,
             body.sidebar-collapsed .sidebar-nav .nav-toggle span,
             body.sidebar-collapsed .sidebar-nav .chevron-icon {
@@ -477,163 +801,118 @@
                 pointer-events: none;
             }
             
-            body.sidebar-collapsed .sidebar-nav .nav-link,
-            body.sidebar-collapsed .sidebar-nav .nav-toggle {
-                justify-content: center;
-                padding-left: 0.5rem;
-                padding-right: 0.5rem;
-            }
-            
-            body.sidebar-collapsed .sidebar-nav .nav-link i,
-            body.sidebar-collapsed .sidebar-nav .nav-toggle i {
-                margin-right: 0;
-            }
-            
             body.sidebar-collapsed .submenu {
-                display: none !important;
+                display: none !important; /* Force hide */
             }
+            
             body.sidebar-collapsed .nav-item.open .chevron-icon {
-                transform: rotate(0deg);
-            }
-        }
-
-
-        /* -------------------------
-         * MOBILE: Responsive Styles
-         * ------------------------- */
-        @media (max-width: 767px) {
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 100vh;
-                transform: translateX(-100%);
-                box-shadow: var(--shadow-md);
-            }
-
-            .main-wrapper {
-                margin-left: 0 !important;
-            }
-
-            body.sidebar-mobile-open .sidebar {
-                transform: translateX(0);
-            }
-
-            body.sidebar-mobile-open #page-overlay {
-                display: block;
-                opacity: 1;
-            }
-
-            .top-bar {
-                padding: 0 1rem;
-            }
-            .page-title {
-                font-size: 1.25rem;
-            }
-            .user-controls {
-                gap: 0.5rem;
-            }
-            .user-avatar {
-                width: 36px;
-                height: 36px;
-                font-size: 0.8rem;
-            }
-            .icon-btn {
-                width: 36px;
-                height: 36px;
-            }
-            
-            .content-area {
-                padding: 1.5rem;
-            }
-            
-            .card-container {
-                gap: 1.5rem;
+                transform: rotate(0deg); /* Reset chevron */
             }
         }
 
     </style>
 </head>
-<body>
+<body class="sidebar-collapsed"> <!-- Start collapsed on desktop -->
 
+    <!-- Toast Notification Element -->
+    <div id="toast-notification" class="toast-notification">
+        <i class="fa-solid fa-check-circle"></i>
+        <span id="toast-message">Saved!</span>
+    </div>
+
+    <!-- Mobile Page Overlay -->
+    <div class="page-overlay" id="page-overlay"></div>
+
+    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <a href="#dashboard" title="eQLM Dashboard Home">
-                <img src="Assets/Images/qlm_new.png" alt="eQLM Logo" id="logo-image">
+            <a href="#" data-nav-id="dashboard">
+                <img src="https://placehold.co/150x40/4A65E2/FFF?text=eQLM&font=inter" alt="eQLM Logo" id="sidebar-logo-img">
             </a>
         </div>
         
         <nav class="sidebar-nav">
             <ul>
-                <li class="nav-item active">
-                    <a href="#dashboard" class="nav-link">
-                        <i class="fa-solid fa-table-columns"></i>
-                        <span>Dashboard</span>
+                <li class="nav-item" data-nav-id="dashboard">
+                    <a href="#" class="nav-link">
+                        <div class="nav-link-inner">
+                            <i class="fa-solid fa-table-columns"></i>
+                            <span>Dashboard</span>
+                        </div>
                     </a>
                 </li>
                 
-                <li class="nav-item">
+                <li class="nav-item" data-nav-id="labworks">
                     <a class="nav-toggle">
-                        <i class="fa-solid fa-flask"></i>
-                        <span>LabWorks</span>
+                        <div class="nav-toggle-inner">
+                            <i class="fa-solid fa-flask"></i>
+                            <span>LabWorks</span>
+                        </div>
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="#labworks-overview" class="nav-link">Overview</a></li>
-                        <li class="nav-item"><a href="#labworks-tests" class="nav-link">All Tests</a></li>
-                        <li class="nav-item"><a href="#labworks-new" class="nav-link">New Test</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">Overview</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">All Tests</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">New Test</a></li>
                     </ul>
                 </li>
 
-                <li class="nav-item">
+                <li class="nav-item" data-nav-id="users">
                     <a class="nav-toggle">
-                        <i class="fa-solid fa-users"></i>
-                        <span>User Management</span>
+                        <div class="nav-toggle-inner">
+                            <i class="fa-solid fa-users"></i>
+                            <span>User Management</span>
+                        </div>
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="#users-all" class="nav-link">All Users</a></li>
-                        <li class="nav-item"><a href="#users-roles" class="nav-link">Roles & Permissions</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">All Users</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">Roles & Permissions</a></li>
                     </ul>
                 </li>
 
-                <li class="nav-item">
+                <li class="nav-item" data-nav-id="config">
                     <a class="nav-toggle">
-                        <i class="fa-solid fa-gear"></i>
-                        <span>Configuration</span>
+                        <div class="nav-toggle-inner">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>Configuration</span>
+                        </div>
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="#application-setting" class="nav-link">Application setting</a></li>
-                        <li class="nav-item"><a href="#workflows" class="nav-link">Workflows</a></li>
-                        <li class="nav-item"><a href="#email-templates" class="nav-link">Email Templates</a></li>
-                        <li class="nav-item"><a href="#assign-lab-properties" class="nav-link">Assign Lab Properties</a></li>
+                        <li class="nav-item" data-nav-id="config-app"><a href="#" class="nav-link">Application Setting</a></li>
+                        <li class="nav-item" data-nav-id="config-workflow"><a href="#" class="nav-link">Workflows</a></li>
+                        <li class="nav-item" data-nav-id="config-email"><a href="#" class="nav-link">Email Templates</a></li>
+                        <li class="nav-item" data-nav-id="config-assign-lab"><a href="#" class="nav-link">Assign Lab Properties</a></li>
                     </ul>
                 </li>
 
-                <li class="nav-item">
+                <li class="nav-item" data-nav-id="reports">
                     <a class="nav-toggle">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span>Reports</span>
+                        <div class="nav-toggle-inner">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Reports</span>
+                        </div>
                         <i class="fa-solid fa-chevron-right chevron-icon"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="nav-item"><a href="#reports-quality" class="nav-link">Quality Reports</a></li>
-                        <li class="nav-item"><a href="#reports-usage" class="nav-link">Usage Reports</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">Quality Reports</a></li>
+                        <li class="nav-item"><a href="#" class="nav-link">Usage Reports</a></li>
                     </ul>
                 </li>
             </ul>
         </nav>
     </aside>
 
-    <div id="page-overlay"></div>
-
+    <!-- Main Content Wrapper -->
     <div class="main-wrapper">
 
+        <!-- Top Header Bar -->
         <header class="top-bar">
             <div class="top-bar-left">
+                <!-- This toggle is for both desktop and mobile -->
                 <i class="fa-solid fa-bars icon-btn" id="sidebar-toggle"></i>
-                <h1 class="page-title">Plant Dashboard</h1>
+                <h1 class="page-title" id="page-title">Plant Dashboard</h1>
             </div>
             <div class="user-controls">
                 <i class="fa-solid fa-search icon-btn"></i>
@@ -642,201 +921,678 @@
             </div>
         </header>
 
-        <main class="content-area">
-            <div id="dashboard" class="page active">
-                <div class="card-container">
-                    <a href="#plant-fernley" class="plant-card card-fernley">
-                        <span>FERNLEY</span>
-                    </a>
-                    <a href="#plant-winchester" class="plant-card card-winchester">
-                        <span>WINCHESTER</span>
-                    </a>
-                </div>
-            </div>
-
-            <div id="assign-lab-properties" class="page">
-                <h2>Assign Lab Properties</h2>
-                <div class="form-container">
-                    <div class="form-group">
-                        <label for="select-lab">Select Lab</label>
-                        <select id="select-lab" class="custom-select">
-                            <option>Embossing</option>
-                            <option>Shell Thickness</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="select-plant">Select Plant</label>
-                        <div class="custom-select-wrapper">
-                            <div class="custom-select" data-target="plant-options">
-                                <span class="selected-options">All selected</span>
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </div>
-                            <div id="plant-options" class="custom-select-options">
-                                <label><input type="checkbox" value="Winchester" checked> Winchester</label>
-                                <label><input type="checkbox" value="Fernley" checked> Fernley</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="select-section">Select Section</label>
-                        <div class="custom-select-wrapper">
-                            <div class="custom-select" data-target="section-options">
-                                <span class="selected-options">All selected</span>
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </div>
-                            <div id="section-options" class="custom-select-options">
-                                <label><input type="checkbox" value="Decking" checked> Decking</label>
-                                <label><input type="checkbox" value="Railing" checked> Railing</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="select-building">Select Building</label>
-                        <div class="custom-select-wrapper">
-                            <div class="custom-select" data-target="building-options">
-                                <span class="selected-options">All selected</span>
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </div>
-                            <div id="building-options" class="custom-select-options">
-                                <label><input type="checkbox" value="Building 1" checked> Building 1</label>
-                                <label><input type="checkbox" value="Building 3" checked> Building 3</label>
-                                <label><input type="checkbox" value="Building 4" checked> Building 4</label>
-                                <label><input type="checkbox" value="Building 6" checked> Building 6</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="application-setting" class="page">
-                <h2>Application Settings</h2>
-                <p>Upload a new logo for the application.</p>
-                <input type="file" id="logo-upload" accept="image/*">
-            </div>
+        <!-- Dynamic Content Area -->
+        <main class="content-area" id="content-area">
+            <!-- Content will be loaded here by JavaScript -->
         </main>
     </div>
 
     <script>
+        // --- TEMPLATES for Dynamic Pages ---
+        
+        const dashboardContent = `
+            <div class="card-container">
+                <a href="#" class="plant-card">
+                    <span>FERNLEY</span>
+                </a>
+                <a href="#" class="plant-card">
+                    <span>WINCHESTER</span>
+                </a>
+            </div>
+        `;
+
+        const assignLabPropertiesContent = `
+            <div class="form-container">
+                <!-- Dropdown 1: Select Lab -->
+                <div class="form-group select-group">
+                    <label for="select-lab">Select Lab</label>
+                    <select id="select-lab">
+                        <option value="embossing">Embossing</option>
+                        <option value="shell_thickness">Shell Thickness</option>
+                    </select>
+                </div>
+
+                <!-- Dropdown 2: Select Plant (Multi-Select) -->
+                <div class="form-group">
+                    <label>Select Plant</label>
+                    <div class="custom-multiselect" data-id="plant">
+                        <div class="multiselect-display">
+                            <span class="multiselect-text">All selected</span>
+                        </div>
+                        <div class="multiselect-options">
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="winchester" checked>
+                                <span>Winchester</span>
+                            </label>
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="fernley" checked>
+                                <span>Fernley</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dropdown 3: Select Section (Multi-Select) -->
+                <div class="form-group">
+                    <label>Select Section</label>
+                    <div class="custom-multiselect" data-id="section">
+                        <div class="multiselect-display">
+                            <span class="multiselect-text">All selected</span>
+                        </div>
+                        <div class="multiselect-options">
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="decking" checked>
+                                <span>Decking</span>
+                            </label>
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="railing" checked>
+                                <span>Railing</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dropdown 4: Select Building (Multi-Select) -->
+                <div class="form-group">
+                    <label>Select Building</label>
+                    <div class="custom-multiselect" data-id="building">
+                        <div class="multiselect-display">
+                            <span class="multiselect-text">All selected</span>
+                        </div>
+                        <div class="multiselect-options">
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="b1" checked>
+                                <span>Building 1</span>
+                            </label>
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="b3" checked>
+                                <span>Building 3</span>
+                            </label>
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="b4" checked>
+                                <span>Building 4</span>
+                            </label>
+                            <label class="multiselect-option">
+                                <input type="checkbox" value="b6" checked>
+                                <span>Building 6</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="save-btn" id="save-lab-settings" style="width: 100%;">
+                    <i class="fa-solid fa-save"></i>
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Save Settings</span>
+                </button>
+            </div>
+        `;
+
+        const applicationSettingsContent = `
+            <div class="form-container">
+                <div class="logo-uploader-container">
+                    <h3>Application Logo</h3>
+                    <div class="logo-preview" id="logo-preview">
+                        <span class="placeholder">No logo uploaded</span>
+                        <img src="" alt="Logo Preview" id="logo-preview-img" style="display:none;">
+                    </div>
+                    <label for="logo-uploader" class="upload-btn">
+                        <i class="fa-solid fa-upload"></i>
+                        <span>Upload New Logo</span>
+                    </label>
+                    <input type="file" id="logo-uploader" accept="image/png, image/jpeg, image/svg+xml">
+                </div>
+            </div>
+        `;
+
+        const workflowContent = `
+            <div class="page-grid page-container">
+                <div class="generator-container">
+                    <h3>Create New Workflow</h3>
+                    <div class="form-group">
+                        <label for="workflow-prompt">Describe the workflow goal:</label>
+                        <textarea id="workflow-prompt" class="generator-input" placeholder="e.g., 'Quality check process for Shell Thickness' or 'New user onboarding for lab technicians'"></textarea>
+                    </div>
+                    <button class="gemini-btn" id="generate-workflow-btn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>Generate Workflow</span>
+                    </button>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="workflow-result">Generated Workflow Steps:</label>
+                        <textarea id="workflow-result" class="generator-result" readonly></textarea>
+                    </div>
+
+                    <button class="save-btn" id="save-workflow-btn" style="display: none;">
+                        <i class="fa-solid fa-save"></i>
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>Save Workflow</span>
+                    </button>
+                </div>
+                <div class="saved-items-container">
+                    <h3>Saved Workflows</h3>
+                    <div class="saved-items-list" id="saved-workflows-list">
+                        <div class="saved-item-placeholder" id="workflow-placeholder">
+                            No saved workflows yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const emailTemplatesContent = `
+            <div class="page-grid page-container">
+                <div class="generator-container">
+                    <h3>Create New Email Template</h3>
+                    <div class="form-group">
+                        <label for="email-prompt">Describe the email's purpose:</label>
+                        <input type="text" id="email-prompt" class="generator-input" placeholder="e.g., 'Alert for failed lab test' or 'Weekly quality summary report'">
+                    </div>
+                    <button class="gemini-btn" id="generate-email-btn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>Generate Email</span>
+                    </button>
+                    
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="email-result">Generated Email Template:</label>
+                        <textarea id="email-result" class="generator-result" readonly></textarea>
+                    </div>
+
+                    <button class="save-btn" id="save-email-btn" style="display: none;">
+                        <i class="fa-solid fa-save"></i>
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>Save Email Template</span>
+                    </button>
+                </div>
+                <div class="saved-items-container">
+                    <h3>Saved Templates</h3>
+                    <div class="saved-items-list" id="saved-emails-list">
+                        <div class="saved-item-placeholder" id="email-placeholder">
+                            No saved templates yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+
+        // --- MAIN SCRIPT ---
+
         document.addEventListener('DOMContentLoaded', function() {
-            const navLinks = document.querySelectorAll('.sidebar-nav .nav-link, .sidebar-nav .nav-toggle');
-            const pages = document.querySelectorAll('.page');
-            const pageTitle = document.querySelector('.page-title');
-            const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+            
+            // --- Global State ---
+            let savedWorkflows = [];
+            let savedEmailTemplates = [];
+            
+            // --- DOM Elements ---
+            const body = document.body;
+            const sidebarToggle = document.getElementById('sidebar-toggle');
             const pageOverlay = document.getElementById('page-overlay');
+            const contentArea = document.getElementById('content-area');
+            const pageTitle = document.getElementById('page-title');
+            const allNavLinks = document.querySelectorAll('.nav-link');
+            const allNavToggles = document.querySelectorAll('.nav-toggle');
+
             const mobileBreakpoint = 767;
 
-            function showPage(pageId) {
-                pages.forEach(page => {
-                    page.classList.remove('active');
-                });
-                const newPage = document.getElementById(pageId);
-                if (newPage) {
-                    newPage.classList.add('active');
-                    pageTitle.textContent = newPage.querySelector('h2').textContent;
+            // --- Page Loading Functions ---
+            
+            function loadPage(title, content, navId) {
+                pageTitle.textContent = title;
+                contentArea.innerHTML = content;
+                setActiveNav(navId);
+                
+                // Add page-specific initializers here
+                if (navId === 'config-assign-lab') {
+                    initializeMultiSelects();
+                    document.getElementById('save-lab-settings').addEventListener('click', handleSaveAssignLab);
                 }
+                if (navId === 'config-app') {
+                    document.getElementById('logo-uploader').addEventListener('change', handleLogoUpload);
+                    loadLogoFromStorage(); // Load preview on page load
+                }
+                if (navId === 'config-workflow') {
+                    document.getElementById('generate-workflow-btn').addEventListener('click', handleWorkflowGeneration);
+                    document.getElementById('save-workflow-btn').addEventListener('click', handleSaveWorkflow);
+                    renderSavedWorkflows();
+                }
+                if (navId === 'config-email') {
+                    document.getElementById('generate-email-btn').addEventListener('click', handleEmailGeneration);
+                    document.getElementById('save-email-btn').addEventListener('click', handleSaveEmail);
+                    renderSavedEmails();
+                }
+                
+                closeMobileSidebar();
             }
 
-            navLinks.forEach(link => {
+            // --- Navigation Handlers ---
+            
+            // Handle clicks on all nav links
+            allNavLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
-                    const parentNavItem = this.closest('.nav-item');
+                    e.preventDefault();
+                    const navItem = this.closest('.nav-item');
+                    if (!navItem) return;
                     
-                    if (this.classList.contains('nav-toggle')) {
-                        if (document.body.classList.contains('sidebar-collapsed') && window.innerWidth > mobileBreakpoint) {
-                            return;
-                        }
-                        parentNavItem.classList.toggle('open');
-                    } else {
-                        const pageId = this.getAttribute('href').substring(1);
-                        showPage(pageId);
-
-                        document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
-                            item.classList.remove('active');
-                        });
-                        parentNavItem.classList.add('active');
-                        // Also add active to parent of submenu item
-                        if (parentNavItem.closest('.submenu')) {
-                            parentNavItem.closest('.submenu').closest('.nav-item').classList.add('active');
-                        }
+                    const navId = navItem.dataset.navId;
+                    
+                    switch(navId) {
+                        case 'dashboard':
+                            loadPage('Plant Dashboard', dashboardContent, 'dashboard');
+                            break;
+                        case 'config-app':
+                            loadPage('Application Setting', applicationSettingsContent, 'config-app');
+                            break;
+                        case 'config-assign-lab':
+                            loadPage('Assign Lab Properties', assignLabPropertiesContent, 'config-assign-lab');
+                            break;
+                        case 'config-workflow':
+                            loadPage('Workflows', workflowContent, 'config-workflow');
+                            break;
+                        case 'config-email':
+                            loadPage('Email Templates', emailTemplatesContent, 'config-email');
+                            break;
+                        // Add other cases here for LabWorks, Users, etc.
+                        default:
+                            // Placeholder for non-implemented links
+                            console.log(`Maps to ${navId}`);
+                            setActiveNav(navId);
+                            closeMobileSidebar();
                     }
                 });
             });
 
-            sidebarToggleBtn.addEventListener('click', function() {
-                if (window.innerWidth > mobileBreakpoint) {
-                    document.body.classList.toggle('sidebar-collapsed');
-                    if (document.body.classList.contains('sidebar-collapsed')) {
+            // Handle clicks on submenu toggles
+            allNavToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    if (body.classList.contains('sidebar-collapsed') && window.innerWidth > mobileBreakpoint) {
+                        return; // Do nothing if sidebar is collapsed on desktop
+                    }
+                    this.closest('.nav-item').classList.toggle('open');
+                });
+            });
+
+            // Set the active navigation link
+            function setActiveNav(navId) {
+                // Remove active from all links and parent toggles
+                allNavLinks.forEach(link => link.classList.remove('active'));
+                allNavToggles.forEach(toggle => toggle.classList.remove('active'));
+                document.querySelectorAll('.nav-item.open').forEach(item => item.classList.remove('open'));
+
+                const activeLink = document.querySelector(`.nav-item[data-nav-id="${navId}"] > .nav-link`);
+                
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                    const parentToggle = activeLink.closest('.submenu')?.closest('.nav-item');
+                    if(parentToggle) {
+                        parentToggle.classList.add('open');
+                        parentToggle.querySelector('.nav-toggle')?.classList.add('active');
+                    }
+                } else {
+                    // It's a submenu link
+                    const activeSubLink = document.querySelector(`.nav-item[data-nav-id="${navId}"] .nav-link`);
+                    if(activeSubLink) {
+                        activeSubLink.classList.add('active');
+                         const parentToggle = activeSubLink.closest('.submenu').closest('.nav-item');
+                         if(parentToggle) {
+                            parentToggle.classList.add('open');
+                            parentToggle.querySelector('.nav-toggle').classList.add('active');
+                        }
+                    }
+                }
+            }
+
+
+            // --- Sidebar Toggle Logic ---
+            sidebarToggle.addEventListener('click', function() {
+                if (window.innerWidth <= mobileBreakpoint) {
+                    // Mobile: toggle flyout
+                    body.classList.toggle('sidebar-mobile-open');
+                } else {
+                    // Desktop: toggle collapse
+                    body.classList.toggle('sidebar-collapsed');
+                    // Close any open submenus when collapsing
+                    if (body.classList.contains('sidebar-collapsed')) {
                         document.querySelectorAll('.nav-item.open').forEach(item => {
                             item.classList.remove('open');
                         });
                     }
-                } else {
-                    document.body.classList.toggle('sidebar-mobile-open');
                 }
-            });
-
-            pageOverlay.addEventListener('click', function() {
-                document.body.classList.remove('sidebar-mobile-open');
-            });
-
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > mobileBreakpoint) {
-                    document.body.classList.remove('sidebar-mobile-open');
-                }
-            });
-
-            // Multi-select dropdown logic
-            document.querySelectorAll('.custom-select').forEach(select => {
-                const optionsContainer = document.getElementById(select.dataset.target);
-                if (!optionsContainer) return;
-
-                select.addEventListener('click', () => {
-                    optionsContainer.style.display = optionsContainer.style.display === 'block' ? 'none' : 'block';
-                });
-
-                optionsContainer.addEventListener('change', () => {
-                    const selected = Array.from(optionsContainer.querySelectorAll('input:checked')).map(el => el.value);
-                    const selectedSpan = select.querySelector('.selected-options');
-                    if (selected.length === 0) {
-                        selectedSpan.textContent = 'None selected';
-                    } else if (selected.length === optionsContainer.querySelectorAll('input').length) {
-                        selectedSpan.textContent = 'All selected';
-                    } else {
-                        selectedSpan.textContent = selected.join(', ');
-                    }
-                });
             });
             
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.custom-select-wrapper')) {
-                    document.querySelectorAll('.custom-select-options').forEach(options => {
-                        options.style.display = 'none';
+            // Close mobile sidebar when overlay is clicked
+            pageOverlay.addEventListener('click', function() {
+                body.classList.remove('sidebar-mobile-open');
+            });
+
+            function closeMobileSidebar() {
+                if (window.innerWidth <= mobileBreakpoint) {
+                    body.classList.remove('sidebar-mobile-open');
+                }
+            }
+            
+            // --- Toast Notification ---
+            function showToast(message) {
+                const toast = document.getElementById('toast-notification');
+                const toastMessage = document.getElementById('toast-message');
+                
+                toastMessage.textContent = message;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000); // Hide after 3 seconds
+            }
+
+            // --- Logo Upload Logic ---
+            function handleLogoUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageUrl = e.target.result;
+                    // Update preview
+                    document.getElementById('logo-preview-img').src = imageUrl;
+                    document.getElementById('logo-preview-img').style.display = 'block';
+                    document.querySelector('.logo-preview .placeholder').style.display = 'none';
+                    
+                    // Update sidebar logo
+                    document.getElementById('sidebar-logo-img').src = imageUrl;
+                    
+                    // Save to localStorage
+                    localStorage.setItem('eqlm-logo', imageUrl);
+                    showToast('Logo updated!');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function loadLogoFromStorage() {
+                const savedLogo = localStorage.getItem('eqlm-logo');
+                if (savedLogo) {
+                    // Update sidebar
+                    document.getElementById('sidebar-logo-img').src = savedLogo;
+                    
+                    // Update preview page (if it exists)
+                    const previewImg = document.getElementById('logo-preview-img');
+                    if (previewImg) {
+                        previewImg.src = savedLogo;
+                        previewImg.style.display = 'block';
+                        document.querySelector('.logo-preview .placeholder').style.display = 'none';
+                    }
+                }
+            }
+
+            // --- GEMINI API CALL LOGIC ---
+
+            /**
+             * Retries fetch with exponential backoff.
+             */
+            async function retryFetch(url, options, retries = 5, delay = 1000) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                         // Don't retry on client errors (4xx)
+                        if (response.status >= 400 && response.status < 500) {
+                            throw new Error(`API Client Error: ${response.status} ${response.statusText}`);
+                        }
+                        // Retry on server errors (5xx)
+                        throw new Error(`API Server Error: ${response.status} ${response.statusText}`);
+                    }
+                    return response;
+                } catch (err) {
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return retryFetch(url, options, retries - 1, delay * 2);
+                    } else {
+                        throw new Error("Max retries reached. " + err.message);
+                    }
+                }
+            }
+
+            /**
+             * Generic function to call the Gemini API.
+             */
+            async function callGeminiAPI(userPrompt, systemPrompt, resultElement, loaderElement, buttonElement, saveButton) {
+                buttonElement.classList.add('loading');
+                buttonElement.disabled = true;
+                resultElement.value = "";
+                if(saveButton) saveButton.style.display = 'none';
+
+                const apiKey = ""; // API key is handled by the environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userPrompt }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                const fetchOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                };
+
+                try {
+                    const response = await retryFetch(apiUrl, fetchOptions);
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        const text = candidate.content.parts[0].text;
+                        resultElement.value = text;
+                        if(saveButton) saveButton.style.display = 'inline-block';
+                    } else if (result.error) {
+                         throw new Error(result.error.message);
+                    } else {
+                        throw new Error("Invalid response structure from API.");
+                    }
+
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    resultElement.value = `Error: ${error.message}\n\nPlease check your API key, network connection, and console for more details.`;
+                } finally {
+                    buttonElement.classList.remove('loading');
+                    buttonElement.disabled = false;
+                }
+            }
+
+            /**
+             * Handles the "Generate Workflow" button click.
+             */
+            function handleWorkflowGeneration() {
+                const promptElement = document.getElementById('workflow-prompt');
+                const resultElement = document.getElementById('workflow-result');
+                const buttonElement = document.getElementById('generate-workflow-btn');
+                const saveButton = document.getElementById('save-workflow-btn');
+                
+                const userPrompt = promptElement.value;
+                if (!userPrompt.trim()) {
+                    showToast('Please describe the workflow goal.');
+                    return;
+                }
+
+                const systemPrompt = "You are an expert in industrial plant management and quality assurance. Generate a clear, concise, step-by-step workflow based on the user's request. Format the output as a numbered list.";
+                
+                callGeminiAPI(userPrompt, systemPrompt, resultElement, null, buttonElement, saveButton);
+            }
+
+            /**
+             * Handles the "Generate Email" button click.
+             */
+            function handleEmailGeneration() {
+                const promptElement = document.getElementById('email-prompt');
+                const resultElement = document.getElementById('email-result');
+                const buttonElement = document.getElementById('generate-email-btn');
+                const saveButton = document.getElementById('save-email-btn');
+
+                const userPrompt = promptElement.value;
+                if (!userPrompt.trim()) {
+                    showToast("Please describe the email's purpose.");
+                    return;
+                }
+
+                const systemPrompt = "You are a professional communications manager for an industrial plant. Write a clear and concise email template for the given purpose. The template must include a subject line (prefixed with 'Subject:') and a body. Use [BRACKETED_PLACEHOLDERS] for any dynamic content (e.g., [Plant_Name], [Test_Name], [Date]).";
+
+                callGeminiAPI(userPrompt, systemPrompt, resultElement, null, buttonElement, saveButton);
+            }
+            
+            // --- Save Generated Content Logic ---
+            
+            function handleSaveWorkflow() {
+                const resultText = document.getElementById('workflow-result').value;
+                if (!resultText) return;
+                
+                // Use the first line as the title, or a snippet
+                const title = resultText.split('\n')[0].replace(/^\d+\.\s*/, '') || 'Workflow';
+                savedWorkflows.push({ id: Date.now(), title: title, content: resultText });
+                
+                renderSavedWorkflows();
+                showToast('Workflow saved!');
+            }
+            
+            function renderSavedWorkflows() {
+                const list = document.getElementById('saved-workflows-list');
+                const placeholder = document.getElementById('workflow-placeholder');
+                if (!list) return;
+                
+                list.innerHTML = ''; // Clear list
+                
+                if (savedWorkflows.length === 0) {
+                    list.appendChild(placeholder);
+                } else {
+                    savedWorkflows.forEach(wf => {
+                        const item = document.createElement('div');
+                        item.className = 'saved-item workflow';
+                        item.textContent = wf.title;
+                        list.appendChild(item);
                     });
                 }
-            });
-
-            // Logo upload
-            const logoUpload = document.getElementById('logo-upload');
-            const logoImage = document.getElementById('logo-image');
-            logoUpload.addEventListener('change', function() {
-                const file = this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        logoImage.src = e.target.result;
-                    }
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            // Initial page load
-            const initialPage = window.location.hash ? window.location.hash.substring(1) : 'dashboard';
-            showPage(initialPage);
-            const initialLink = document.querySelector(`.nav-link[href="#${initialPage}"]`);
-            if(initialLink){
-                initialLink.closest('.nav-item').classList.add('active');
             }
+
+            function handleSaveEmail() {
+                const resultText = document.getElementById('email-result').value;
+                if (!resultText) return;
+
+                let subject = 'Email Template';
+                let body = resultText;
+
+                const subjectMatch = resultText.match(/Subject:(.*)/i);
+                if (subjectMatch && subjectMatch[1]) {
+                    subject = subjectMatch[1].trim();
+                    body = resultText.substring(resultText.indexOf('\n') + 1).trim();
+                }
+
+                savedEmailTemplates.push({ id: Date.now(), subject: subject, body: body });
+                
+                renderSavedEmails();
+                showToast('Email template saved!');
+            }
+            
+            function renderSavedEmails() {
+                 const list = document.getElementById('saved-emails-list');
+                 const placeholder = document.getElementById('email-placeholder');
+                 if (!list) return;
+                
+                 list.innerHTML = ''; // Clear list
+                
+                 if (savedEmailTemplates.length === 0) {
+                    list.appendChild(placeholder);
+                 } else {
+                    savedEmailTemplates.forEach(email => {
+                        const item = document.createElement('div');
+                        item.className = 'saved-item email';
+                        item.innerHTML = `
+                            <span class="item-title">${email.subject}</span>
+                            <span class="item-body">${email.body.split('\n')[0]}</span>
+                        `;
+                        list.appendChild(item);
+                    });
+                }
+            }
+            
+            // --- Save Assign Lab Properties ---
+            function handleSaveAssignLab() {
+                const button = document.getElementById('save-lab-settings');
+                button.classList.add('loading');
+                button.disabled = true;
+                
+                // Simulate network request
+                setTimeout(() => {
+                    button.classList.remove('loading');
+                    button.disabled = false;
+                    showToast('Settings saved successfully!');
+                }, 1500);
+            }
+
+
+            // --- Custom Multi-Select Dropdown Logic ---
+            function initializeMultiSelects() {
+                document.querySelectorAll('.custom-multiselect').forEach(container => {
+                    const display = container.querySelector('.multiselect-display');
+                    const options = container.querySelectorAll('.multiselect-option input[type="checkbox"]');
+                    
+                    // Toggle dropdown
+                    display.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Close other dropdowns
+                        document.querySelectorAll('.custom-multiselect.open').forEach(openDropdown => {
+                            if (openDropdown !== container) {
+                                openDropdown.classList.remove('open');
+                            }
+                        });
+                        container.classList.toggle('open');
+                    });
+                    
+                    // Update text on checkbox change
+                    options.forEach(option => {
+                        option.addEventListener('change', () => {
+                            updateMultiselectText(container);
+                        });
+                    });
+                    
+                    // Initial text update
+                    updateMultiselectText(container);
+                });
+            }
+
+            function updateMultiselectText(container) {
+                const options = container.querySelectorAll('.multiselect-option input[type="checkbox"]');
+                const textElement = container.querySelector('.multiselect-text');
+                
+                const selectedOptions = Array.from(options).filter(opt => opt.checked);
+                
+                if (selectedOptions.length === 0) {
+                    textElement.textContent = 'None selected';
+                } else if (selectedOptions.length === options.length) {
+                    textElement.textContent = 'All selected';
+                } else {
+                    let text = selectedOptions.map(opt => opt.nextElementSibling.textContent).join(', ');
+                    if (text.length > 25) {
+                        textElement.textContent = `${selectedOptions.length} selected`;
+                    } else {
+                        textElement.textContent = text;
+                    }
+                }
+            }
+            
+            // Global click listener to close dropdowns
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.custom-multiselect.open').forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                });
+            });
+
+
+            // --- Initial Load ---
+            loadLogoFromStorage(); // Load logo for sidebar on initial load
+            loadPage('Plant Dashboard', dashboardContent, 'dashboard'); // Load default page
+            
         });
     </script>
-
 </body>
 </html>
