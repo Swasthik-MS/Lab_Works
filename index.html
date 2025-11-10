@@ -70,6 +70,11 @@
             transform: translateX(120%);
             transition: transform 0.3s ease-in-out;
         }
+        .toast-notification.warning {
+            background-color: #ffc107; /* Warning yellow/orange */
+            color: #212529; /* Darker text for contrast */
+        }
+
         .toast-notification.show {
             transform: translateX(0);
         }
@@ -1091,12 +1096,17 @@
         // --- NEW Assign Lab Properties Content ---
         const assignLabPropertiesContent = `
             <div class="form-container">
-                <!-- Dropdown 1: Select Lab -->
-                <div class="form-group select-group">
-                    <label for="select-lab">Select Lab</label>
-                    <select id="select-lab">
-                        <option value="" selected>Select</option>
-                    </select>
+                <!-- Dropdown 1: Select Lab (Multi-Select) -->
+                <div class="form-group">
+                    <label>Select Lab</label>
+                    <div class="custom-multiselect" id="select-lab-wrapper">
+                        <div class="multiselect-display">
+                            <span class="multiselect-text placeholder">Select</span>
+                        </div>
+                        <div class="multiselect-options" id="select-lab-options">
+                            <!-- Lab options will be populated here -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Dropdown 2: Select Plant (Multi-Select) -->
@@ -1399,11 +1409,24 @@
             }
             
             // --- Toast Notification ---
-            function showToast(message) {
+            function showToast(message, type = 'success') {
                 const toast = document.getElementById('toast-notification');
                 const toastMessage = document.getElementById('toast-message');
-                
+                const toastIcon = toast.querySelector('i');
+
+                toast.className = 'toast-notification'; // Reset classes
+                if (type) {
+                    toast.classList.add(type);
+                }
+
                 toastMessage.textContent = message;
+                
+                if (type === 'warning') {
+                    toastIcon.className = 'fa-solid fa-triangle-exclamation';
+                } else {
+                    toastIcon.className = 'fa-solid fa-check-circle';
+                }
+
                 toast.classList.add('show');
                 
                 setTimeout(() => {
@@ -1508,7 +1531,7 @@
                     const candidate = result.candidates?.[0];
 
                     if (candidate && candidate.content?.parts?.[0]?.text) {
-                        const text = candidate.content.parts[0].text;
+                        const text = candidate.content.parts[0]?.text;
                         resultElement.value = text;
                         if(saveButton) saveButton.style.display = 'inline-block';
                     } else if (result.error) {
@@ -1688,18 +1711,16 @@
 
             // MODIFIED: updateMultiselectText to show comma-separated list
             function updateMultiselectText(container) {
-                const options = container.querySelectorAll('.multiselect-option input[type="checkbox"]');
                 const textElement = container.querySelector('.multiselect-text');
-                
-                const selectedOptions = Array.from(options).filter(opt => opt.checked);
+                const selectedOptions = Array.from(container.querySelectorAll('.multiselect-option input[type="checkbox"]:checked'));
                 
                 if (selectedOptions.length === 0) {
-                    textElement.textContent = 'None selected';
+                    textElement.textContent = 'Select';
                     textElement.classList.add('placeholder');
                 } else {
                     textElement.classList.remove('placeholder');
                     let text = selectedOptions.map(opt => opt.nextElementSibling.textContent).join(', ');
-                    if (text.length > 25) { // Truncate if too long
+                    if (text.length > 35) { // Truncate if too long
                         textElement.textContent = `${selectedOptions.length} selected`;
                     } else {
                         textElement.textContent = text;
@@ -1708,9 +1729,13 @@
             }
             
             // Global click listener to close dropdowns
-            document.addEventListener('click', () => {
-                document.querySelectorAll('.custom-multiselect.open').forEach(dropdown => {
-                    dropdown.classList.remove('open');
+            document.addEventListener('click', (e) => {
+                 // If the click is not inside a multiselect that should be persistent, close it.
+                const openDropdowns = document.querySelectorAll('.custom-multiselect.open');
+                openDropdowns.forEach(dropdown => {
+                    if (!dropdown.contains(e.target) && !dropdown.dataset.isPersistent) {
+                        dropdown.classList.remove('open');
+                    }
                 });
             });
 
@@ -1723,62 +1748,38 @@
                     Object.keys(plantData[plantName]).forEach(sectionName => {
                         const section = plantData[plantName][sectionName];
                         
-                        // Case 1: Labs directly under section (e.g., Fernley > Decking)
-                        if (section.labs && Object.keys(section.buildings).length === 0) {
-                            Object.keys(section.labs).forEach(labName => {
-                                if (labName === "Retest") { // Handle nested "Retest" group
-                                    Object.keys(section.labs.Retest.labs).forEach(retestLabName => {
-                                        flatLabDatabase.push({
-                                            id: `${plantName}_${sectionName}_Retest_${retestLabName}`,
-                                            name: retestLabName,
-                                            plant: plantName,
-                                            section: sectionName,
-                                            building: "Retest", // Treat "Retest" as a building/group
-                                            path: `${retestLabName} (${plantName} > ${sectionName} > Retest)`
-                                        });
-                                    });
+                        const processLabs = (labs, buildingName = null, subgroupName = null) => {
+                            Object.keys(labs).forEach(labName => {
+                                if (labName === "Retest" && labs.Retest.labs) {
+                                    processLabs(labs.Retest.labs, buildingName, "Retest");
                                 } else {
+                                    let path = `${labName} (${plantName} > ${sectionName}`;
+                                    if (buildingName) path += ` > ${buildingName}`;
+                                    if (subgroupName) path += ` > ${subgroupName}`;
+                                    path += ')';
+
                                     flatLabDatabase.push({
-                                        id: `${plantName}_${sectionName}_${labName}`,
+                                        id: `${plantName}_${sectionName}_${buildingName || ''}_${subgroupName || ''}_${labName}`,
                                         name: labName,
                                         plant: plantName,
                                         section: sectionName,
-                                        building: null,
-                                        path: `${labName} (${plantName} > ${sectionName})`
+                                        building: buildingName,
+                                        subgroup: subgroupName,
+                                        path: path,
+                                        type: labName.split(' ')[0]
                                     });
                                 }
                             });
-                        }
+                        };
 
-                        // Case 2: Labs under buildings (e.g., Winchester > Decking)
+                        if (section.labs) {
+                            processLabs(section.labs);
+                        }
                         if (section.buildings) {
                              Object.keys(section.buildings).forEach(buildingName => {
                                 const building = section.buildings[buildingName];
                                 if (building.labs) {
-                                    Object.keys(building.labs).forEach(labName => {
-                                        if (labName === "Retest") { // Handle nested "Retest" group
-                                            Object.keys(building.labs.Retest.labs).forEach(retestLabName => {
-                                                flatLabDatabase.push({
-                                                    id: `${plantName}_${sectionName}_${buildingName}_Retest_${retestLabName}`,
-                                                    name: retestLabName,
-                                                    plant: plantName,
-                                                    section: sectionName,
-                                                    building: buildingName,
-                                                    subgroup: "Retest", // Special subgroup
-                                                    path: `${retestLabName} (${plantName} > ${sectionName} > ${buildingName} > Retest)`
-                                                });
-                                            });
-                                        } else {
-                                             flatLabDatabase.push({
-                                                id: `${plantName}_${sectionName}_${buildingName}_${labName}`,
-                                                name: labName,
-                                                plant: plantName,
-                                                section: sectionName,
-                                                building: buildingName,
-                                                path: `${labName} (${plantName} > ${sectionName} > ${buildingName})`
-                                            });
-                                        }
-                                    });
+                                    processLabs(building.labs, buildingName);
                                 }
                              });
                         }
@@ -1786,144 +1787,142 @@
                 });
                 
                 // 2. Populate the initial Lab dropdown
-                const labSelect = document.getElementById('select-lab');
-                labSelect.innerHTML = '<option value="" selected>Select</option>'; // Reset
+                const labOptionsContainer = document.getElementById('select-lab-options');
+                labOptionsContainer.innerHTML = ''; // Reset
                 const uniqueLabs = [...new Map(flatLabDatabase.map(lab => [lab.path, lab])).values()];
-                uniqueLabs.sort((a,b) => a.path.localeCompare(b.path)); // Sort alphabetically
+                uniqueLabs.sort((a,b) => a.path.localeCompare(b.path));
                 
                 uniqueLabs.forEach(lab => {
-                    const option = document.createElement('option');
-                    option.value = lab.id; // Use the unique ID
-                    option.textContent = lab.path;
-                    option.dataset.labName = lab.name; // Store original lab name
-                    labSelect.appendChild(option);
+                    const optionHTML = `
+                        <label class="multiselect-option">
+                            <input type="checkbox" value="${lab.id}" data-lab-type="${lab.type}">
+                            <span>${lab.path}</span>
+                        </label>
+                    `;
+                    labOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
                 });
 
-                // 3. Add event listeners for cascading logic
-                labSelect.addEventListener('change', onLabChange);
-                
-                // Plant and Building are multi-select, their listeners are added dynamically
+                // 3. Add event listeners
+                initializeMultiSelect('select-lab-wrapper', true); // persistent
+                labOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.addEventListener('change', (e) => onLabSelectionChange(e));
+                });
                 
                 document.getElementById('select-section').addEventListener('change', onSectionChange);
-                document.getElementById('select-items-to-add').addEventListener('change', onItemsChange);
             }
 
-            function onLabChange(e) {
-                const selectedLabId = e.target.value;
-                const selectedLabName = e.target.options[e.target.selectedIndex].dataset.labName;
+            function onLabSelectionChange(e) {
+                const changedCheckbox = e.target;
+                const labWrapper = document.getElementById('select-lab-wrapper');
+                const selectedCheckboxes = Array.from(labWrapper.querySelectorAll('input:checked'));
 
-                const plantSelectWrapper = document.getElementById('select-plant-wrapper');
+                // --- 1. Lab Type Validation ---
+                if (selectedCheckboxes.length > 1) {
+                    const firstType = selectedCheckboxes[0].dataset.labType;
+                    if (changedCheckbox.dataset.labType !== firstType) {
+                        showToast('Please select labs of the same type. You have selected different lab types.', 'warning');
+                        changedCheckbox.checked = false; // Revert the selection
+                        updateMultiselectText(labWrapper); // Update display after reverting
+                        return; // Stop processing
+                    }
+                }
+                
+                updateMultiselectText(labWrapper);
+
+                // --- 2. Auto-Populate Plants ---
+                const plantWrapper = document.getElementById('select-plant-wrapper');
                 const plantOptionsContainer = document.getElementById('select-plant-options');
                 
                 resetMultiSelect('select-plant-wrapper', 'Select');
                 resetDropdown('select-section', 'Select');
                 resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select');
+                resetDropdown('select-items-to-add', 'Select'); // Also reset items to add
 
-                if (!selectedLabId) {
-                    plantSelectWrapper.classList.add('disabled');
+                if (selectedCheckboxes.length === 0) {
                     return;
                 }
-                
-                // Find all plants that have this lab name
-                const relevantPlants = [...new Set(flatLabDatabase
-                    .filter(lab => lab.name === selectedLabName)
-                    .map(lab => lab.plant)
-                )];
 
-                plantOptionsContainer.innerHTML = ''; // Clear options
+                const relevantLabs = selectedCheckboxes.map(cb => flatLabDatabase.find(lab => lab.id === cb.value));
+                const relevantPlants = [...new Set(relevantLabs.map(lab => lab.plant))];
+
+                plantOptionsContainer.innerHTML = '';
                 
-                if (relevantPlants.length > 0) {
-                    relevantPlants.forEach(plantName => {
-                        const optionHTML = `
-                            <label class="multiselect-option">
-                                <input type="checkbox" value="${plantName}" checked>
-                                <span>${plantName}</span>
-                            </label>
-                        `;
-                        plantOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
-                    });
-                    
-                    plantSelectWrapper.classList.remove('disabled');
-                    // Add change listeners to the new checkboxes
-                    plantOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.addEventListener('change', onPlantChange);
-                    });
-                }
+                relevantPlants.forEach(plantName => {
+                    const optionHTML = `
+                        <label class="multiselect-option">
+                            <input type="checkbox" value="${plantName}" checked>
+                            <span>${plantName}</span>
+                        </label>
+                    `;
+                    plantOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
+                });
                 
-                // Initialize multi-select interaction
-                initializeMultiSelect(plantSelectWrapper.id);
-                // Trigger change to update text and cascade
+                plantWrapper.classList.remove('disabled');
+                initializeMultiSelect('select-plant-wrapper');
+                plantOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.addEventListener('change', onPlantChange);
+                });
+                
                 onPlantChange(); 
             }
 
             function onPlantChange() {
-                const selectedLabName = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].dataset.labName;
-                
+                const selectedLabs = Array.from(document.querySelectorAll('#select-lab-options input:checked'));
                 const selectedPlants = getMultiSelectValues('select-plant-options');
                 const sectionSelect = document.getElementById('select-section');
 
                 resetDropdown('select-section', 'Select');
                 resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select');
+                resetDropdown('select-items-to-add', 'Select'); // Also reset items to add
                 
-                if (!selectedLabName || selectedPlants.length === 0) {
+                if (selectedLabs.length === 0 || selectedPlants.length === 0) {
                     sectionSelect.disabled = true;
                     return;
                 }
 
-                // Find sections in the selected plants that contain the selected lab
+                const firstLabType = selectedLabs[0].dataset.labType;
                 const relevantSections = [...new Set(flatLabDatabase
                     .filter(lab => 
-                        lab.name === selectedLabName &&
+                        lab.type === firstLabType &&
                         selectedPlants.includes(lab.plant)
                     )
                     .map(lab => lab.section)
                 )];
                 
                 sectionSelect.innerHTML = '<option value="" selected>Select</option>'; // Reset
-                
-                if(relevantSections.length > 0) {
-                    relevantSections.forEach(sectionName => {
-                        const option = document.createElement('option');
-                        option.value = sectionName;
-                        option.textContent = sectionName;
-                        sectionSelect.appendChild(option);
-                    });
-                    sectionSelect.disabled = false;
-                } else {
-                    sectionSelect.disabled = true;
-                }
+                relevantSections.forEach(sectionName => {
+                    const option = document.createElement('option');
+                    option.value = sectionName;
+                    option.textContent = sectionName;
+                    sectionSelect.appendChild(option);
+                });
+                sectionSelect.disabled = false;
             }
 
             function onSectionChange(e) {
                 const selectedSection = e.target.value;
-                const selectedLabName = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].dataset.labName;
+                const selectedLabs = Array.from(document.querySelectorAll('#select-lab-options input:checked'));
                 const selectedPlants = getMultiSelectValues('select-plant-options');
-
-                const buildingSelectWrapper = document.getElementById('select-building-wrapper');
+                const buildingWrapper = document.getElementById('select-building-wrapper');
                 const buildingOptionsContainer = document.getElementById('select-building-options');
                 
                 resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select');
+                resetDropdown('select-items-to-add', 'Select'); // Also reset items to add
 
-                if (!selectedSection) {
-                    buildingSelectWrapper.classList.add('disabled');
+                if (!selectedSection || selectedLabs.length === 0) {
                     return;
                 }
                 
-                // Find buildings (or subgroups like "Retest")
+                const firstLabType = selectedLabs[0].dataset.labType;
                 const relevantBuildings = [...new Set(flatLabDatabase
                     .filter(lab => 
-                        lab.name === selectedLabName &&
+                        lab.type === firstLabType &&
                         selectedPlants.includes(lab.plant) &&
                         lab.section === selectedSection &&
-                        (lab.building || lab.subgroup) // Has a building or a subgroup
+                        lab.building // Only include if a building is defined
                     )
-                    .map(lab => lab.subgroup ? lab.subgroup : lab.building) // Prioritize subgroup name if it exists
+                    .map(lab => lab.building)
                 )];
-
-                buildingOptionsContainer.innerHTML = ''; // Clear options
 
                 if (relevantBuildings.length > 0) {
                     relevantBuildings.forEach(buildingName => {
@@ -1936,71 +1935,52 @@
                         buildingOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
                     });
 
-                    buildingSelectWrapper.classList.remove('disabled');
-                    // Add change listeners
+                    buildingWrapper.classList.remove('disabled');
+                    initializeMultiSelect('select-building-wrapper');
                     buildingOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                         cb.addEventListener('change', onBuildingChange);
                     });
                 } else {
-                    // No buildings for this combo (e.g., Fernley > Decking > Embossing)
-                    // This means the "Items to Add" should be enabled directly
-                    buildingSelectWrapper.classList.add('disabled');
-                    onBuildingChange(); // Trigger next step
-                    return;
+                    // If no buildings, enable "Items to Add" directly
+                    document.getElementById('select-items-to-add').disabled = false;
                 }
-
-                initializeMultiSelect(buildingSelectWrapper.id);
-                onBuildingChange(); // Trigger update
             }
 
             function onBuildingChange() {
+                // This function is primarily to enable the "Items to Add" dropdown
+                // based on whether buildings are selected or if no buildings are applicable.
                 const itemsSelect = document.getElementById('select-items-to-add');
                 const selectedBuildings = getMultiSelectValues('select-building-options');
-                
-                // Check if the building dropdown is enabled AND has selections,
-                // OR if the building dropdown is disabled (meaning no buildings apply)
-                const buildingsWrapper = document.getElementById('select-building-wrapper');
-                const isEnabled = !buildingsWrapper.classList.contains('disabled');
-                
-                if ((isEnabled && selectedBuildings.length > 0) || !isEnabled) {
-                    // This is where you would fetch items based on lab, plant, section, AND buildings
-                    // For now, just enable the dropdown.
+                const buildingWrapper = document.getElementById('select-building-wrapper');
+
+                // If the building dropdown is enabled and has selections, or if it's disabled (meaning no buildings apply)
+                if ((!buildingWrapper.classList.contains('disabled') && selectedBuildings.length > 0) || buildingWrapper.classList.contains('disabled')) {
                     itemsSelect.disabled = false;
-                    resetDropdown('select-items-to-add', 'Select'); // Keep placeholder
-                    // To-do: Populate with actual items
-                    
                 } else {
                     itemsSelect.disabled = true;
-                    resetDropdown('select-items-to-add', 'Select');
                 }
+                resetDropdown('select-items-to-add', 'Select'); // Keep placeholder
+                // To-do: Populate with actual items based on all selections
             }
             
             function onItemsChange() {
                 // Logic when "Items to Add" is changed
             }
 
-            // --- Multi-Select Helper Functions (New) ---
+            // --- Multi-Select Helper Functions (New & Modified) ---
 
-            function initializeMultiSelect(wrapperId) {
+            function initializeMultiSelect(wrapperId, isPersistent = false) {
                 const container = document.getElementById(wrapperId);
                 if (!container) return;
 
                 const display = container.querySelector('.multiselect-display');
+                container.dataset.isPersistent = isPersistent;
                 
-                // Toggle dropdown
                 display.addEventListener('click', (e) => {
                     if (container.classList.contains('disabled')) return;
                     e.stopPropagation();
-                    // Close other dropdowns
-                    document.querySelectorAll('.custom-multiselect.open').forEach(openDropdown => {
-                        if (openDropdown !== container) {
-                            openDropdown.classList.remove('open');
-                        }
-                    });
                     container.classList.toggle('open');
                 });
-                
-                // Update text
                 updateMultiselectText(container);
             }
             
@@ -2009,44 +1989,36 @@
                     .map(cb => cb.value);
             }
 
-            function resetDropdown(selectId, placeholderText) {
-                const select = document.getElementById(selectId);
-                if (select) {
-                    select.innerHTML = `<option value="" selected>${placeholderText}</option>`;
-                    select.disabled = true;
-                }
-            }
-            
-            function resetMultiSelect(wrapperId, placeholderText) {
+            function resetMultiSelect(wrapperId, placeholder) {
                 const wrapper = document.getElementById(wrapperId);
-                const optionsContainer = document.getElementById(wrapperId.replace('-wrapper', '-options'));
+                const optionsContainer = wrapper.querySelector('.multiselect-options');
                 const textElement = wrapper.querySelector('.multiselect-text');
-                
-                if (wrapper) {
-                    wrapper.classList.add('disabled');
-                    wrapper.classList.remove('open');
-                }
-                if (optionsContainer) {
-                    optionsContainer.innerHTML = '';
-                }
-                if (textElement) {
-                    textElement.textContent = placeholderText;
-                    textElement.classList.add('placeholder');
-                }
+
+                wrapper.classList.add('disabled');
+                optionsContainer.innerHTML = '';
+                textElement.textContent = placeholder;
+                textElement.classList.add('placeholder');
+                updateMultiselectText(wrapper);
             }
 
-            // --- Initial Load ---
-            buildFlatLabDB(); // Build the flat lab DB on initial script load
-            loadLogoFromStorage(); // Load logo for sidebar on initial load
-            loadPage('Plant Dashboard', dashboardContent, 'dashboard'); // Load default page
-            
-            
-            function buildFlatLabDB() {
-                // This function is now run inside initializeAssignLabPage to ensure it runs
-                // when the page is loaded, not just on script init.
-                // We keep a global `flatLabDatabase` variable.
+            function resetDropdown(selectId, placeholder) {
+                const select = document.getElementById(selectId);
+                select.disabled = true;
+                select.innerHTML = `<option value="" selected>${placeholder}</option>`;
             }
+
+
+            // --- INITIALIZATION ---
             
+            // Load logo from storage on initial load
+            loadLogoFromStorage();
+            
+            // Load initial page
+            loadPage('Plant Dashboard', dashboardContent, 'dashboard');
+            
+            // Set initial active nav based on the loaded page
+            setActiveNav('dashboard');
+
         });
     </script>
 </body>
