@@ -1122,12 +1122,17 @@
                     </div>
                 </div>
 
-                <!-- Dropdown 3: Select Section (Single-Select) -->
-                <div class="form-group select-group">
-                    <label for="select-section">Select Section</label>
-                    <select id="select-section" disabled>
-                        <option value="" selected>Select</option>
-                    </select>
+                <!-- Dropdown 3: Select Section (Multi-Select) -->
+                <div class="form-group">
+                    <label>Select Section</label>
+                    <div class="custom-multiselect disabled" id="select-section-wrapper">
+                        <div class="multiselect-display">
+                            <span class="multiselect-text placeholder">Select</span>
+                        </div>
+                        <div class="multiselect-options" id="select-section-options">
+                            <!-- Section options will be populated here -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Dropdown 4: Select Building (Multi-Select) -->
@@ -1740,7 +1745,7 @@
             });
 
             // --- NEW: Assign Lab Properties Page Logic ---
-            
+
             function initializeAssignLabPage() {
                 // 1. Flatten the lab data for easy lookup
                 flatLabDatabase = [];
@@ -1753,20 +1758,27 @@
                                 if (labName === "Retest" && labs.Retest.labs) {
                                     processLabs(labs.Retest.labs, buildingName, "Retest");
                                 } else {
-                                    let path = `${labName} (${plantName} > ${sectionName}`;
-                                    if (buildingName) path += ` > ${buildingName}`;
-                                    if (subgroupName) path += ` > ${subgroupName}`;
-                                    path += ')';
+                                    // Construct a unique path for display
+                                    let pathParts = [plantName, sectionName];
+                                    if (buildingName) pathParts.push(buildingName);
+                                    
+                                    let displayLabName = labName;
+                                    // The original request implies subgroup is part of the lab name in the UI
+                                    // e.g., "Retest - Bulge" but the data has it nested. We adapt here.
+                                    if (subgroupName) {
+                                        displayLabName = `${subgroupName} - ${labName}`;
+                                    }
+
+                                    let path = `${displayLabName} (${pathParts.join(' > ')})`;
 
                                     flatLabDatabase.push({
-                                        id: `${plantName}_${sectionName}_${buildingName || ''}_${subgroupName || ''}_${labName}`,
-                                        name: labName,
+                                        id: `${plantName}_${sectionName}_${buildingName || ''}_${subgroupName || ''}_${labName}`.replace(/\s+/g, '-') as string,
+                                        name: displayLabName, // Use the combined name
                                         plant: plantName,
                                         section: sectionName,
                                         building: buildingName,
-                                        subgroup: subgroupName,
-                                        path: path,
-                                        type: labName.split(' ')[0]
+                                        // A consistent "type" for validation, e.g., "Embossing"
+                                        type: (labName).split(' ')[0] 
                                     });
                                 }
                             });
@@ -1787,191 +1799,129 @@
                 });
                 
                 // 2. Populate the initial Lab dropdown
-                const labOptionsContainer = document.getElementById('select-lab-options');
-                labOptionsContainer.innerHTML = ''; // Reset
                 const uniqueLabs = [...new Map(flatLabDatabase.map(lab => [lab.path, lab])).values()];
                 uniqueLabs.sort((a,b) => a.path.localeCompare(b.path));
-                
-                uniqueLabs.forEach(lab => {
-                    const optionHTML = `
-                        <label class="multiselect-option">
-                            <input type="checkbox" value="${lab.id}" data-lab-type="${lab.type}">
-                            <span>${lab.path}</span>
-                        </label>
-                    `;
-                    labOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
-                });
-
-                // 3. Add event listeners
-                initializeMultiSelect('select-lab-wrapper', true); // persistent
-                labOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    cb.addEventListener('change', (e) => onLabSelectionChange(e));
-                });
-                
-                document.getElementById('select-section').addEventListener('change', onSectionChange);
+                populateMultiSelect('select-lab-options', uniqueLabs.map(l => ({ value: l.id, text: l.path, 'data-lab-type': l.type })), onLabSelectionChange);
+                initializeMultiSelect('select-lab-wrapper', true);
             }
 
+            /**
+             * Main handler for when a lab selection changes.
+             */
             function onLabSelectionChange(e) {
-                const changedCheckbox = e.target;
                 const labWrapper = document.getElementById('select-lab-wrapper');
                 const selectedCheckboxes = Array.from(labWrapper.querySelectorAll('input:checked'));
+                const changedCheckbox = e.target;
 
-                // --- 1. Lab Type Validation ---
-                if (selectedCheckboxes.length > 1) {
+                // --- Lab Type Validation ---
+                if (selectedCheckboxes.length > 0) {
                     const firstType = selectedCheckboxes[0].dataset.labType;
                     if (changedCheckbox.dataset.labType !== firstType) {
-                        showToast('Please select labs of the same type. You have selected different lab types.', 'warning');
+                        showToast('Please select labs of the same type.', 'warning');
                         changedCheckbox.checked = false; // Revert the selection
-                        updateMultiselectText(labWrapper); // Update display after reverting
+                        updateMultiselectText(labWrapper);
                         return; // Stop processing
                     }
                 }
                 
                 updateMultiselectText(labWrapper);
+                updateDependentFields();
+            }
 
-                // --- 2. Auto-Populate Plants ---
-                const plantWrapper = document.getElementById('select-plant-wrapper');
-                const plantOptionsContainer = document.getElementById('select-plant-options');
+            /**
+             * A single function to orchestrate all dependent field updates.
+             * This is called when labs, plants, or sections change.
+             */
+            function updateDependentFields() {
+                const selectedLabIds = getMultiSelectValues('select-lab-options');
                 
-                resetMultiSelect('select-plant-wrapper', 'Select');
-                resetDropdown('select-section', 'Select');
-                resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select'); // Also reset items to add
-
-                if (selectedCheckboxes.length === 0) {
+                // If no labs are selected, reset everything.
+                if (selectedLabIds.length === 0) {
+                    resetMultiSelect('select-plant-wrapper', 'Select');
+                    resetMultiSelect('select-section-wrapper', 'Select');
+                    resetMultiSelect('select-building-wrapper', 'Select');
                     return;
                 }
 
-                const relevantLabs = selectedCheckboxes.map(cb => flatLabDatabase.find(lab => lab.id === cb.value));
-                const relevantPlants = [...new Set(relevantLabs.map(lab => lab.plant))];
+                const allSelectedLabs = flatLabDatabase.filter(lab => selectedLabIds.includes(lab.id));
 
-                plantOptionsContainer.innerHTML = '';
+                // --- Update Plants ---
+                const relevantPlants = [...new Set(allSelectedLabs.map(lab => lab.plant))];
+                populateMultiSelect('select-plant-options', relevantPlants.map(p => ({ value: p, text: p })), updateDependentFields, true);
+                initializeMultiSelect('select-plant-wrapper');
                 
-                relevantPlants.forEach(plantName => {
+                const selectedPlants = getMultiSelectValues('select-plant-options');
+
+                // --- Update Sections ---
+                const labsInSelectedPlants = allSelectedLabs.filter(lab => selectedPlants.includes(lab.plant));
+                const relevantSections = [...new Set(labsInSelectedPlants.map(lab => lab.section))];
+                populateMultiSelect('select-section-options', relevantSections.map(s => ({ value: s, text: s })), updateDependentFields, true);
+                initializeMultiSelect('select-section-wrapper');
+
+                const selectedSections = getMultiSelectValues('select-section-options');
+
+                // --- Update Buildings ---
+                const labsInSelectedSections = labsInSelectedPlants.filter(lab => selectedSections.includes(lab.section) && lab.building);
+                const relevantBuildings = [...new Set(labsInSelectedSections.map(lab => lab.building))];
+                
+                if (relevantBuildings.length > 0) {
+                    populateMultiSelect('select-building-options', relevantBuildings.map(b => ({ value: b, text: b })), null, true); // No callback needed for the last level
+                    initializeMultiSelect('select-building-wrapper');
+                } else {
+                    resetMultiSelect('select-building-wrapper', 'N/A');
+                }
+            }
+
+            // --- Multi-Select Helper Functions (Refactored) ---
+
+            /**
+             * Populates a multi-select dropdown with options.
+             */
+            function populateMultiSelect(optionsContainerId, items, changeCallback, allChecked = false) {
+                const optionsContainer = document.getElementById(optionsContainerId);
+                const wrapper = optionsContainer.closest('.custom-multiselect');
+                
+                // Preserve existing checked values to avoid resetting user selections
+                const previouslyChecked = getMultiSelectValues(optionsContainerId);
+
+                optionsContainer.innerHTML = ''; 
+
+                items.forEach(item => {
+                    const dataAttrs = Object.keys(item)
+                        .filter(key => key.startsWith('data-'))
+                        .map(key => `${key}="${item[key]}"`)
+                        .join(' ');
+                    
+                    // If allChecked is true, check it. Otherwise, check if it was previously checked.
+                    const isChecked = allChecked || previouslyChecked.includes(item.value);
+
                     const optionHTML = `
                         <label class="multiselect-option">
-                            <input type="checkbox" value="${plantName}" checked>
-                            <span>${plantName}</span>
+                            <input type="checkbox" value="${item.value}" ${dataAttrs} ${isChecked ? 'checked' : ''}>
+                            <span>${item.text}</span>
                         </label>
                     `;
-                    plantOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
+                    optionsContainer.insertAdjacentHTML('beforeend', optionHTML);
                 });
-                
-                plantWrapper.classList.remove('disabled');
-                initializeMultiSelect('select-plant-wrapper');
-                plantOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                    cb.addEventListener('change', onPlantChange);
-                });
-                
-                onPlantChange(); 
-            }
 
-            function onPlantChange() {
-                const selectedLabs = Array.from(document.querySelectorAll('#select-lab-options input:checked'));
-                const selectedPlants = getMultiSelectValues('select-plant-options');
-                const sectionSelect = document.getElementById('select-section');
-
-                resetDropdown('select-section', 'Select');
-                resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select'); // Also reset items to add
-                
-                if (selectedLabs.length === 0 || selectedPlants.length === 0) {
-                    sectionSelect.disabled = true;
-                    return;
-                }
-
-                const firstLabType = selectedLabs[0].dataset.labType;
-                const relevantSections = [...new Set(flatLabDatabase
-                    .filter(lab => 
-                        lab.type === firstLabType &&
-                        selectedPlants.includes(lab.plant)
-                    )
-                    .map(lab => lab.section)
-                )];
-                
-                sectionSelect.innerHTML = '<option value="" selected>Select</option>'; // Reset
-                relevantSections.forEach(sectionName => {
-                    const option = document.createElement('option');
-                    option.value = sectionName;
-                    option.textContent = sectionName;
-                    sectionSelect.appendChild(option);
-                });
-                sectionSelect.disabled = false;
-            }
-
-            function onSectionChange(e) {
-                const selectedSection = e.target.value;
-                const selectedLabs = Array.from(document.querySelectorAll('#select-lab-options input:checked'));
-                const selectedPlants = getMultiSelectValues('select-plant-options');
-                const buildingWrapper = document.getElementById('select-building-wrapper');
-                const buildingOptionsContainer = document.getElementById('select-building-options');
-                
-                resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select'); // Also reset items to add
-
-                if (!selectedSection || selectedLabs.length === 0) {
-                    return;
-                }
-                
-                const firstLabType = selectedLabs[0].dataset.labType;
-                const relevantBuildings = [...new Set(flatLabDatabase
-                    .filter(lab => 
-                        lab.type === firstLabType &&
-                        selectedPlants.includes(lab.plant) &&
-                        lab.section === selectedSection &&
-                        lab.building // Only include if a building is defined
-                    )
-                    .map(lab => lab.building)
-                )];
-
-                if (relevantBuildings.length > 0) {
-                    relevantBuildings.forEach(buildingName => {
-                        const optionHTML = `
-                            <label class="multiselect-option">
-                                <input type="checkbox" value="${buildingName}" checked>
-                                <span>${buildingName}</span>
-                            </label>
-                        `;
-                        buildingOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
+                if (changeCallback) {
+                    optionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                        cb.addEventListener('change', changeCallback);
                     });
-
-                    buildingWrapper.classList.remove('disabled');
-                    initializeMultiSelect('select-building-wrapper');
-                    buildingOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.addEventListener('change', onBuildingChange);
-                    });
-                } else {
-                    // If no buildings, enable "Items to Add" directly
-                    document.getElementById('select-items-to-add').disabled = false;
+                }
+                
+                if (wrapper) {
+                    updateMultiselectText(wrapper);
+                    wrapper.classList.toggle('disabled', items.length === 0);
                 }
             }
 
-            function onBuildingChange() {
-                // This function is primarily to enable the "Items to Add" dropdown
-                // based on whether buildings are selected or if no buildings are applicable.
-                const itemsSelect = document.getElementById('select-items-to-add');
-                const selectedBuildings = getMultiSelectValues('select-building-options');
-                const buildingWrapper = document.getElementById('select-building-wrapper');
-
-                // If the building dropdown is enabled and has selections, or if it's disabled (meaning no buildings apply)
-                if ((!buildingWrapper.classList.contains('disabled') && selectedBuildings.length > 0) || buildingWrapper.classList.contains('disabled')) {
-                    itemsSelect.disabled = false;
-                } else {
-                    itemsSelect.disabled = true;
-                }
-                resetDropdown('select-items-to-add', 'Select'); // Keep placeholder
-                // To-do: Populate with actual items based on all selections
-            }
-            
-            function onItemsChange() {
-                // Logic when "Items to Add" is changed
-            }
-
-            // --- Multi-Select Helper Functions (New & Modified) ---
-
+            /**
+             * Initializes the open/close behavior for a custom multi-select dropdown.
+             */
             function initializeMultiSelect(wrapperId, isPersistent = false) {
                 const container = document.getElementById(wrapperId);
-                if (!container) return;
+                if (!container || container.dataset.initialized === 'true') return;
 
                 const display = container.querySelector('.multiselect-display');
                 container.dataset.isPersistent = isPersistent;
@@ -1981,31 +1931,30 @@
                     e.stopPropagation();
                     container.classList.toggle('open');
                 });
-                updateMultiselectText(container);
+                
+                container.dataset.initialized = 'true';
             }
             
+            /**
+             * Gets the values of checked checkboxes in a multi-select container.
+             */
             function getMultiSelectValues(optionsContainerId) {
                 return Array.from(document.querySelectorAll(`#${optionsContainerId} input[type="checkbox"]:checked`))
                     .map(cb => cb.value);
             }
 
+            /**
+             * Resets a multi-select dropdown to its initial state.
+             */
             function resetMultiSelect(wrapperId, placeholder) {
                 const wrapper = document.getElementById(wrapperId);
                 const optionsContainer = wrapper.querySelector('.multiselect-options');
-                const textElement = wrapper.querySelector('.multiselect-text');
-
+                
                 wrapper.classList.add('disabled');
                 optionsContainer.innerHTML = '';
-                textElement.textContent = placeholder;
-                textElement.classList.add('placeholder');
-                updateMultiselectText(wrapper);
+                updateMultiselectText(wrapper, placeholder);
             }
-
-            function resetDropdown(selectId, placeholder) {
-                const select = document.getElementById(selectId);
-                select.disabled = true;
-                select.innerHTML = `<option value="" selected>${placeholder}</option>`;
-            }
+            
 
 
             // --- INITIALIZATION ---
