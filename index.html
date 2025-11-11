@@ -5,948 +5,222 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>eQLM Plant Dashboard Prototype</title>
     
-    <!-- Fonts and Icons -->
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Configure Tailwind to use Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 
+      This <style> block is for components that are dynamically 
+      generated or need states that Tailwind's JIT can't see.
+      It's minimal by design.
+    -->
     <style>
-        /* -------------------------
-         * Global Resets & Setup
-         * ------------------------- */
-        :root {
-            --primary-blue: #4A65E2; /* A fresh, modern blue */
-            --primary-hover: #4058C3;
-            --sidebar-bg: #ffffff;
-            --content-bg: #f7f8fa;
-            --header-bg: #ffffff;
-            --border-color: #e9ecef;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --text-on-primary: #ffffff;
-            --radius-sm: 4px;
-            --radius-md: 8px;
-            --radius-lg: 12px;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            
-            --sidebar-width: 260px;
-            --sidebar-width-collapsed: 88px; /* 80px + 8px padding */
-            --header-height: 65px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Base styles for the app */
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--content-bg);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            color: var(--text-primary);
-        }
-
-        /* -------------------------
-         * Toast Notification (Improved)
-         * ------------------------- */
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: #ffffff;
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            z-index: 9999;
-            transform: translateX(120%);
-            transition: transform 0.3s ease-in-out;
-        }
-        .toast-notification.show {
-            transform: translateX(0);
-        }
-        
-        /* --- IMPROVEMENT: Added type-specific styles --- */
-        .toast-notification.success {
-            background-color: #28a745; /* Success green */
-        }
-        .toast-notification.error {
-            background-color: #dc3545; /* Error red */
-        }
-        
-        .toast-notification i {
-            font-size: 1.25rem;
-        }
-        .toast-notification span {
-            font-weight: 600;
-        }
-
-
-        /* -------------------------
-         * Sidebar Navigation
-         * ------------------------- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            transition: width 0.3s ease, transform 0.3s ease;
-            z-index: 1000;
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start; /* Align left */
-            padding: 0 1.5rem;
-            height: var(--header-height);
-            border-bottom: 1px solid var(--border-color);
-            overflow: hidden;
-        }
-        
-        .sidebar-logo a {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-        }
-
-        .sidebar-logo img {
-            max-height: 36px;
-            width: auto;
-            transition: opacity 0.3s ease;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 1rem 0.5rem; /* Padding for nav items */
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        .sidebar-nav ul {
-            list-style: none;
-        }
-
-        .sidebar-nav .nav-item {
-            margin-bottom: 0.25rem;
-        }
-
-        .sidebar-nav .nav-link,
-        .sidebar-nav .nav-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: space-between; /* For chevron */
-            padding: 0.8rem 1rem;
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-weight: 500;
-            transition: background 0.2s, color 0.2s;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-
-        .sidebar-nav .nav-link-inner,
-        .sidebar-nav .nav-toggle-inner {
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .sidebar-nav .nav-link i,
-        .sidebar-nav .nav-toggle i {
-            font-size: 1.1rem;
-            width: 30px;
-            text-align: center;
-            margin-right: 15px;
-            flex-shrink: 0;
-            transition: color 0.2s;
-        }
-        
-        .sidebar-nav .nav-link span,
-        .sidebar-nav .nav-toggle span {
-            opacity: 1;
-            transition: opacity 0.3s ease;
-            font-size: 0.95rem;
-        }
-
-        .sidebar-nav .nav-link:hover,
-        .sidebar-nav .nav-toggle:hover {
-            background-color: var(--content-bg);
-            color: var(--text-primary);
-        }
-        
-        .sidebar-nav .nav-link.active,
-        .sidebar-nav .nav-item.open > .nav-toggle {
-            background-color: var(--primary-blue);
-            color: var(--text-on-primary);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .sidebar-nav .nav-link.active i,
-        .sidebar-nav .nav-item.open > .nav-toggle i {
-            color: var(--text-on-primary);
-        }
-        
-        .sidebar-nav .chevron-icon {
-            font-size: 0.8rem;
-            transition: transform 0.2s ease, opacity 0.3s ease;
-            opacity: 1;
-        }
-
-        /* Submenu styles */
-        .submenu {
-            display: none;
-            padding-left: 1.25rem; /* Indentation */
-            margin-top: 0.25rem;
-        }
-
-        .submenu .nav-link {
-            padding-top: 0.6rem;
-            padding-bottom: 0.6rem;
-            font-size: 0.9rem;
-            padding-left: 2.5rem; /* Icon indentation + text */
-        }
-        
-        .submenu .nav-link.active {
-            color: var(--primary-blue);
-            background-color: var(--content-bg);
-        }
-
-        .submenu .nav-link.active i {
-             color: var(--primary-blue);
-        }
-
-        /* JS-toggled 'open' class */
-        .nav-item.open > .submenu {
-            display: block;
-        }
-
-        .nav-item.open > .nav-toggle .chevron-icon {
-            transform: rotate(90deg);
-        }
-
-
-        /* -------------------------
-         * Main Content Area
-         * ------------------------- */
-        .main-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: margin-left 0.3s ease;
-        }
-
-        /* -------------------------
-         * Top Bar (Header)
-         * ------------------------- */
-        .top-bar {
-            height: var(--header-height);
-            background: var(--header-bg);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 1rem 0 1.5rem;
-            flex-shrink: 0;
-            z-index: 900;
-        }
-        
-        @media (min-width: 768px) {
-            .top-bar {
-                padding: 0 2rem;
-            }
-        }
-        
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .page-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
-        .icon-btn {
-            font-size: 1.25rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: color 0.2s;
-            padding: 0.5rem;
-            border-radius: var(--radius-md);
-        }
-        
-        .icon-btn:hover {
-            color: var(--text-primary);
-            background-color: var(--content-bg);
-        }
-        
-        #sidebar-toggle {
-            font-size: 1.4rem;
-        }
-
-        .user-controls {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: var(--primary-blue);
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        /* -------------------------
-         * Main Content
-         * ------------------------- */
-        .content-area {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-        }
-        
-        @media (min-width: 768px) {
-            .content-area {
-                padding: 2.5rem;
-            }
-        }
-        
-        /* Dashboard Card Styles */
-        .card-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-        }
-
-        .plant-card {
-            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-hover) 100%);
-            color: #ffffff;
-            border-radius: var(--radius-lg);
-            padding: 2rem;
-            text-decoration: none;
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .plant-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-
-        .plant-card span {
-            font-size: 1.75rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            z-index: 2;
-            position: relative;
-        }
-
-        .plant-card::after {
-            content: "\f013"; /* Gear icon */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            position: absolute;
-            right: 1rem;
-            bottom: 0.5rem;
-            font-size: 6rem;
-            color: rgba(255, 255, 255, 0.1);
-            z-index: 1;
-            transform: rotate(-10deg);
-        }
-        
-        /* -------------------------
-         * Form & Page Content Styles
-         * ------------------------- */
-        .page-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .form-container {
-            max-width: 600px;
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 2rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .form-group select,
-        .form-group input[type="text"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
             font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            background-color: #ffffff;
-            appearance: none;
-        }
-        
-        .form-group select:disabled {
-            background-color: var(--content-bg);
-            cursor: not-allowed;
-        }
-        
-        .form-group select:focus,
-        .form-group input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 2px rgba(74, 105, 226, 0.2);
-        }
-        
-        .form-group.select-group {
-            position: relative;
-        }
-        
-        .form-group.select-group::after {
-            content: '\f078'; /* chevron-down */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            position: absolute;
-            right: 1rem;
-            top: calc(0.75rem + 1em); /* Aligns with select box padding */
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            pointer-events: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Custom Multi-Select Dropdown */
-        .custom-multiselect {
-            position: relative;
+        /* Scrollbar styling */
+        .sidebar-nav::-webkit-scrollbar {
+            width: 6px;
         }
-        
-        .multiselect-display {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            background-color: #ffffff;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 3px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+            background-color: transparent;
         }
 
-        .custom-multiselect.disabled .multiselect-display {
-            background-color: var(--content-bg);
-            cursor: not-allowed;
-        }
-        
-        .multiselect-text {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding-right: 1rem;
-        }
-
-        .multiselect-text.placeholder {
-            color: var(--text-secondary);
-        }
-
-        .multiselect-display::after {
-            content: '\f078'; /* chevron-down */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            transition: transform 0.2s ease;
-        }
-        
-        .custom-multiselect.open .multiselect-display::after {
-            transform: rotate(180deg);
-        }
-        
-        .multiselect-options {
-            display: none;
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            width: 100%;
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            z-index: 100;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
+        /* Custom styles for the multi-select dropdown.
+         We use JS to toggle the 'open' class, and these styles react to it.
+        */
         .custom-multiselect.open .multiselect-options {
             display: block;
         }
-        
-        .multiselect-option {
-            padding: 0.75rem 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .multiselect-option:hover {
-            background-color: var(--content-bg);
-        }
-        
-        .multiselect-option input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--primary-blue);
-        }
-        
-        /* Application Settings Page */
-        .logo-uploader-container {
-             display: flex;
-             flex-direction: column;
-             align-items: center;
-             gap: 1.5rem;
-        }
-        
-        .logo-preview {
-            width: 200px;
-            height: 80px;
-            border: 2px dashed var(--border-color);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: var(--content-bg);
-            padding: 1rem;
-        }
-        
-        .logo-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        
-        .logo-preview .placeholder {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-        
-        input[type="file"] {
-            display: none;
+        .custom-multiselect.open .multiselect-chevron {
+            transform: rotate(180deg);
         }
 
-        .upload-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary-blue);
-            background-color: #f0f3ff;
-            border: 1px solid transparent;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        
-        .upload-btn:hover {
-            background-color: #e4e9ff;
-        }
-        
-        /* -------------------------
-         * GEMINI AI GENERATOR STYLES
-         * ------------------------- */
-        .page-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-
-        @media (min-width: 1024px) {
-            .page-grid {
-                /* 60/40 split on desktop */
-                grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-            }
-        }
-
-        .generator-container, .saved-items-container {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 1.5rem;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        @media (min-width: 768px) {
-             .generator-container, .saved-items-container {
-                 padding: 2rem;
-             }
-        }
-
-        .generator-container h3, .saved-items-container h3 {
-            font-weight: 600;
-            font-size: 1.25rem;
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-        }
-
-        .generator-input, textarea.generator-input, textarea.generator-result {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            margin-bottom: 1rem;
-        }
-
-        textarea.generator-input {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        textarea.generator-result {
-            min-height: 250px;
-            background-color: var(--content-bg);
-            color: var(--text-primary);
-            resize: vertical;
-            line-height: 1.6;
-        }
-
-        .gemini-btn, .save-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #ffffff;
-            background-color: var(--primary-blue);
-            border: none;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .gemini-btn:hover, .save-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .gemini-btn:disabled, .save-btn:disabled {
-            background-color: #b0bce1;
-            cursor: not-allowed;
-        }
-        
-        .gemini-btn i.fa-spinner {
-            display: none;
-        }
-        
-        .gemini-btn.loading i.fa-wand-magic-sparkles {
-            display: none;
-        }
-        .gemini-btn.loading i.fa-spinner {
-            display: inline-block;
-        }
-
-        .save-btn {
-            background-color: #1a7f37; /* Green save button */
-            margin-top: 0.5rem;
-        }
-        
-        .save-btn:hover {
-            background-color: #15692e;
-        }
-        
+        /* Custom styles for saving/loading buttons */
+        .gemini-btn i.fa-spinner,
         .save-btn i.fa-spinner {
             display: none;
         }
+        .gemini-btn.loading i.fa-wand-magic-sparkles,
         .save-btn.loading i.fa-save {
             display: none;
         }
+        .gemini-btn.loading i.fa-spinner,
         .save-btn.loading i.fa-spinner {
             display: inline-block;
+            animation: spin 1s linear infinite;
         }
-
-        /* Saved Items List */
-        .saved-items-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         
-        .saved-item-placeholder {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-style: italic;
-            text-align: center;
-            padding: 2rem 0;
+        /* Style for disabled lab options */
+        .multiselect-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f9fafb; /* bg-gray-50 */
         }
-        
-        .saved-item {
-            background: var(--content-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        
-        .saved-item.email .item-title {
-            font-weight: 600;
-            color: var(--text-primary);
-            display: block;
-            margin-bottom: 0.25rem;
-        }
-        
-        .saved-item.email .item-body {
-            font-weight: 400;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-
-        /* -------------------------
-         * MOBILE: Collapsed Sidebar
-         * ------------------------- */
-        .page-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        
-        @media (max-width: 767px) {
-            .sidebar {
-                position: fixed;
-                height: 100%;
-                transform: translateX(-100%);
-            }
-            
-            body.sidebar-mobile-open .sidebar {
-                transform: translateX(0);
-            }
-            
-            body.sidebar-mobile-open .page-overlay {
-                opacity: 1;
-                pointer-events: auto;
-            }
-            
-            /* Hide toggle on mobile, it's in the header */
-            #sidebar-toggle-desktop {
-                display: none;
-            }
-        }
-        
-
-        /* -------------------------
-         * DESKTOP: Collapsed Sidebar
-         * ------------------------- */
-        @media (min-width: 768px) {
-            /* Hide mobile-only toggle */
-            #sidebar-toggle-mobile {
-                display: none;
-            }
-            
-            body.sidebar-collapsed .sidebar {
-                width: var(--sidebar-width-collapsed);
-            }
-
-            body.sidebar-collapsed .sidebar-logo {
-                justify-content: center;
-                padding: 0 0.5rem;
-            }
-            
-            body.sidebar-collapsed .sidebar-logo img {
-                max-height: 32px;
-            }
-
-            body.sidebar-collapsed .sidebar-nav .nav-link,
-            body.sidebar-collapsed .sidebar-nav .nav-toggle {
-                justify-content: center;
-            }
-
-            body.sidebar-collapsed .sidebar-nav .nav-link-inner,
-            body.sidebar-collapsed .sidebar-nav .nav-toggle-inner {
-                justify-content: center;
-                width: 100%;
-            }
-
-            body.sidebar-collapsed .sidebar-nav .nav-link i,
-            body.sidebar-collapsed .sidebar-nav .nav-toggle i {
-                margin-right: 0;
-            }
-            
-            body.sidebar-collapsed .sidebar-nav .nav-link span,
-            body.sidebar-collapsed .sidebar-nav .nav-toggle span,
-            body.sidebar-collapsed .sidebar-nav .chevron-icon {
-                opacity: 0;
-                width: 0;
-                pointer-events: none;
-            }
-            
-            body.sidebar-collapsed .submenu {
-                display: none !important; /* Force hide */
-            }
-            
-            body.sidebar-collapsed .nav-item.open .chevron-icon {
-                transform: rotate(0deg); /* Reset chevron */
-            }
-        }
-
     </style>
 </head>
-<body class="sidebar-collapsed"> <!-- Start collapsed on desktop -->
+
+<body class="bg-gray-100 text-gray-900 font-inter h-screen overflow-hidden">
 
     <!-- Toast Notification Element -->
-    <div id="toast-notification" class="toast-notification">
-        <i class="fa-solid fa-check-circle"></i>
-        <span id="toast-message">Saved!</span>
+    <div id="toast-notification" class="fixed top-5 right-5 z-[100] flex items-center gap-3 px-6 py-4 rounded-lg text-white shadow-lg transform translate-x-[120%] transition-transform duration-300 ease-in-out">
+        <i id="toast-icon" class="fa-solid fa-check-circle text-xl"></i>
+        <span id="toast-message" class="font-semibold">Saved!</span>
     </div>
 
     <!-- Mobile Page Overlay -->
-    <div class="page-overlay" id="page-overlay"></div>
+    <div id="page-overlay" class="fixed inset-0 bg-black/50 z-20 lg:hidden opacity-0 transition-opacity duration-300 pointer-events-none"></div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <a href="#" data-nav-id="dashboard">
-                <img src="https://placehold.co/150x40/4A65E2/FFF?text=eQLM&font=inter" alt="eQLM Logo" id="sidebar-logo-img">
-            </a>
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed lg:relative z-30 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full 
+                                   transition-all duration-300 ease-in-out 
+                                   -translate-x-full lg:translate-x-0 
+                                   lg:w-64"
+                                   style="visibility: hidden;"> <!-- Hide until JS runs -->
+            
+            <!-- Sidebar Logo -->
+            <div id="sidebar-logo-container" class="flex items-center h-16 px-4 border-b border-gray-200 flex-shrink-0 justify-between lg:justify-start">
+                <a href="#" class="flex items-center gap-2" data-nav-id="dashboard">
+                    <img src="https://placehold.co/150x40/4A65E2/FFF?text=eQLM&font=inter" alt="eQLM Logo" id="sidebar-logo-img" class="h-8 w-auto">
+                </a>
+                <!-- Mobile close button -->
+                <button id="sidebar-close-btn" class="lg:hidden text-gray-500 hover:text-gray-800">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Sidebar Navigation -->
+            <nav class="sidebar-nav flex-1 overflow-y-auto p-2 space-y-1">
+                <ul>
+                    <li class="nav-item" data-nav-id="dashboard">
+                        <a href="#" class="nav-link flex items-center p-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-blue-600">
+                            <i class="fa-solid fa-table-columns w-6 text-center text-base"></i>
+                            <span class="nav-text ml-3 font-medium text-sm transition-opacity duration-300">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item" data-nav-id="labworks">
+                        <a class="nav-toggle flex items-center justify-between p-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-blue-600 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-flask w-6 text-center text-base"></i>
+                                <span class="nav-text ml-3 font-medium text-sm transition-opacity duration-300">LabWorks</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right chevron-icon text-xs transition-transform duration-200"></i>
+                        </a>
+                        <ul class="submenu hidden pt-1 pl-8 space-y-1">
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Overview</a></li>
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">All Tests</a></li>
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">New Test</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" data-nav-id="users">
+                        <a class="nav-toggle flex items-center justify-between p-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-blue-600 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-users w-6 text-center text-base"></i>
+                                <span class="nav-text ml-3 font-medium text-sm transition-opacity duration-300">User Management</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right chevron-icon text-xs transition-transform duration-200"></i>
+                        </a>
+                        <ul class="submenu hidden pt-1 pl-8 space-y-1">
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">All Users</a></li>
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Roles & Permissions</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" data-nav-id="config">
+                        <a class="nav-toggle flex items-center justify-between p-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-blue-600 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-gear w-6 text-center text-base"></i>
+                                <span class="nav-text ml-3 font-medium text-sm transition-opacity duration-300">Configuration</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right chevron-icon text-xs transition-transform duration-200"></i>
+                        </a>
+                        <ul class="submenu hidden pt-1 pl-8 space-y-1">
+                            <li class="nav-item" data-nav-id="config-app"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Application Setting</a></li>
+                            <li class="nav-item" data-nav-id="config-workflow"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Workflows</a></li>
+                            <li class="nav-item" data-nav-id="config-email"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Email Templates</a></li>
+                            <li class="nav-item" data-nav-id="config-assign-lab"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Assign Lab Properties</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item" data-nav-id="reports">
+                        <a class="nav-toggle flex items-center justify-between p-3 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-blue-600 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-chart-pie w-6 text-center text-base"></i>
+                                <span class="nav-text ml-3 font-medium text-sm transition-opacity duration-300">Reports</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right chevron-icon text-xs transition-transform duration-200"></i>
+                        </a>
+                        <ul class="submenu hidden pt-1 pl-8 space-y-1">
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Quality Reports</a></li>
+                            <li class="nav-item"><a href="#" class="nav-link block p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-blue-600 text-sm">Usage Reports</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header Bar -->
+            <header class="top-bar h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
+                <div class="top-bar-left flex items-center gap-3">
+                    <!-- Unified Sidebar Toggle -->
+                    <button id="sidebar-toggle" class="icon-btn text-gray-600 hover:text-blue-600 text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <h1 class="page-title text-xl lg:text-2xl font-semibold text-gray-800" id="page-title">Plant Dashboard</h1>
+                </div>
+                <div class="user-controls flex items-center gap-4">
+                    <button class="icon-btn text-gray-500 hover:text-blue-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+                        <i class="fa-solid fa-search"></i>
+                    </button>
+                    <button class="icon-btn text-gray-500 hover:text-blue-600 text-lg w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+                        <i class="fa-solid fa-bell"></i>
+                    </button>
+                    <div class="user-avatar w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm cursor-pointer">
+                        SM
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Content Area -->
+            <main class="content-area flex-1 p-4 lg:p-8 overflow-y-auto" id="content-area">
+                <!-- Content will be loaded here by JavaScript -->
+            </main>
         </div>
-        
-        <nav class="sidebar-nav">
-            <ul>
-                <li class="nav-item" data-nav-id="dashboard">
-                    <a href="#" class="nav-link">
-                        <div class="nav-link-inner">
-                            <i class="fa-solid fa-table-columns"></i>
-                            <span>Dashboard</span>
-                        </div>
-                    </a>
-                </li>
-                
-                <li class="nav-item" data-nav-id="labworks">
-                    <a class="nav-toggle">
-                        <div class="nav-toggle-inner">
-                            <i class="fa-solid fa-flask"></i>
-                            <span>LabWorks</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
-                    </a>
-                    <ul class="submenu">
-                        <li class="nav-item"><a href="#" class="nav-link">Overview</a></li>
-                        <li class="nav-item"><a href="#" class="nav-link">All Tests</a></li>
-                        <li class="nav-item"><a href="#" class="nav-link">New Test</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item" data-nav-id="users">
-                    <a class="nav-toggle">
-                        <div class="nav-toggle-inner">
-                            <i class="fa-solid fa-users"></i>
-                            <span>User Management</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
-                    </a>
-                    <ul class="submenu">
-                        <li class="nav-item"><a href="#" class="nav-link">All Users</a></li>
-                        <li class="nav-item"><a href="#" class="nav-link">Roles & Permissions</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item" data-nav-id="config">
-                    <a class="nav-toggle">
-                        <div class="nav-toggle-inner">
-                            <i class="fa-solid fa-gear"></i>
-                            <span>Configuration</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
-                    </a>
-                    <ul class="submenu">
-                        <li class="nav-item" data-nav-id="config-app"><a href="#" class="nav-link">Application Setting</a></li>
-                        <li class="nav-item" data-nav-id="config-workflow"><a href="#" class="nav-link">Workflows</a></li>
-                        <li class="nav-item" data-nav-id="config-email"><a href="#" class="nav-link">Email Templates</a></li>
-                        <li class="nav-item" data-nav-id="config-assign-lab"><a href="#" class="nav-link">Assign Lab Properties</a></li>
-                    </ul>
-                </li>
-
-                <li class="nav-item" data-nav-id="reports">
-                    <a class="nav-toggle">
-                        <div class="nav-toggle-inner">
-                            <i class="fa-solid fa-chart-pie"></i>
-                            <span>Reports</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-right chevron-icon"></i>
-                    </a>
-                    <ul class="submenu">
-                        <li class="nav-item"><a href="#" class="nav-link">Quality Reports</a></li>
-                        <li class="nav-item"><a href="#" class="nav-link">Usage Reports</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-    </aside>
-
-    <!-- Main Content Wrapper -->
-    <div class="main-wrapper">
-
-        <!-- Top Header Bar -->
-        <header class="top-bar">
-            <div class="top-bar-left">
-                <!-- This toggle is for both desktop and mobile -->
-                <i class="fa-solid fa-bars icon-btn" id="sidebar-toggle"></i>
-                <h1 class="page-title" id="page-title">Plant Dashboard</h1>
-            </div>
-            <div class="user-controls">
-                <i class="fa-solid fa-search icon-btn"></i>
-                <i class="fa-solid fa-bell icon-btn"></i>
-                <div class="user-avatar">SM</div>
-            </div>
-        </header>
-
-        <!-- Dynamic Content Area -->
-        <main class="content-area" id="content-area">
-            <!-- Content will be loaded here by JavaScript -->
-        </main>
     </div>
 
     <script>
@@ -1083,129 +357,129 @@
         };
 
 
-        // --- TEMPLATES for Dynamic Pages ---
+        // --- TEMPLATES for Dynamic Pages (with Tailwind) ---
         
         const dashboardContent = `
-            <div class="card-container">
-                <a href="#" class="plant-card">
-                    <span>FERNLEY</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <a href="#" class="plant-card relative block p-8 rounded-xl shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white overflow-hidden transition-transform duration-200 hover:-translate-y-1">
+                    <span class="relative z-10 text-2xl font-bold tracking-wide">FERNLEY</span>
+                    <i class="fa-solid fa-gear absolute z-0 text-white/10 text-8xl bottom-0 right-0 transform -rotate-12 translate-x-4 translate-y-4"></i>
                 </a>
-                <a href="#" class="plant-card">
-                    <span>WINCHESTER</span>
+                <a href="#" class="plant-card relative block p-8 rounded-xl shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white overflow-hidden transition-transform duration-200 hover:-translate-y-1">
+                    <span class="relative z-10 text-2xl font-bold tracking-wide">WINCHESTER</span>
+                    <i class="fa-solid fa-gear absolute z-0 text-white/10 text-8xl bottom-0 right-0 transform -rotate-12 translate-x-4 translate-y-4"></i>
                 </a>
             </div>
         `;
 
-        // --- Assign Lab Properties Content ---
+        // --- Assign Lab Properties Content (NEW) ---
         const assignLabPropertiesContent = `
-            <div class="form-container">
-                <!-- Dropdown 1: Select Lab -->
-                <div class="form-group select-group">
-                    <label for="select-lab">Select Lab</label>
-                    <select id="select-lab">
-                        <option value="" selected>Select</option>
-                    </select>
-                </div>
-
-                <!-- Dropdown 2: Select Plant (Multi-Select) -->
-                <div class="form-group">
-                    <label>Select Plant</label>
-                    <div class="custom-multiselect disabled" id="select-plant-wrapper">
-                        <div class="multiselect-display">
-                            <span class="multiselect-text placeholder">Select</span>
+            <div class="form-container max-w-2xl mx-auto bg-white p-6 lg:p-8 rounded-xl shadow-md">
+                
+                <!-- Dropdown 1: Select Lab (NEW: Multi-Select) -->
+                <div class="form-group mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Lab</label>
+                    <div class="custom-multiselect" id="select-lab-wrapper">
+                        <div class="multiselect-display flex justify-between items-center w-full rounded-md border border-gray-300 shadow-sm bg-white text-sm py-3 px-4 cursor-pointer">
+                            <span class="multiselect-text placeholder text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap pr-2">Select Lab(s)</span>
+                            <i class="fa-solid fa-chevron-down multiselect-chevron text-gray-500 text-xs transition-transform duration-200"></i>
                         </div>
-                        <div class="multiselect-options" id="select-plant-options">
-                            <!-- Plant options will be populated here -->
+                        <div class="multiselect-options hidden absolute z-20 mt-1 w-full bg-white shadow-lg border border-gray-300 rounded-md max-h-60 overflow-auto" id="select-lab-options">
+                            <!-- Lab options will be populated here -->
                         </div>
                     </div>
                 </div>
 
-                <!-- Dropdown 3: Select Section (Single-Select) -->
-                <div class="form-group select-group">
-                    <label for="select-section">Select Section</label>
-                    <select id="select-section" disabled>
-                        <option value="" selected>Select</option>
-                    </select>
+                <!-- Field 2: Plant(s) (NEW: Read-only) -->
+                <div class="form-group mb-5">
+                    <label for="auto-plant" class="block text-sm font-medium text-gray-700 mb-1">Plant(s)</label>
+                    <input type="text" id="auto-plant" readonly 
+                           class="block w-full rounded-md border-gray-300 shadow-sm text-sm py-3 px-4 bg-gray-100 text-gray-600 cursor-not-allowed focus:ring-0 focus:border-gray-300">
                 </div>
 
-                <!-- Dropdown 4: Select Building/Group (Multi-Select) -->
-                <div class="form-group">
-                    <label>Select Building / Group</label>
-                    <div class="custom-multiselect disabled" id="select-building-wrapper">
-                        <div class="multiselect-display">
-                            <span class="multiselect-text placeholder">Select</span>
-                        </div>
-                        <div class="multiselect-options" id="select-building-options">
-                            <!-- Building options will be populated here -->
+                <!-- Field 3: Section(s) (NEW: Read-only) -->
+                <div class="form-group mb-5">
+                    <label for="auto-section" class="block text-sm font-medium text-gray-700 mb-1">Section(s)</label>
+                    <input type="text" id="auto-section" readonly 
+                           class="block w-full rounded-md border-gray-300 shadow-sm text-sm py-3 px-4 bg-gray-100 text-gray-600 cursor-not-allowed focus:ring-0 focus:border-gray-300">
+                </div>
+                
+                <!-- Field 4: Building/Group(s) (NEW: Read-only) -->
+                <div class="form-group mb-5">
+                    <label for="auto-building" class="block text-sm font-medium text-gray-700 mb-1">Building / Group(s)</label>
+                    <input type="text" id="auto-building" readonly 
+                           class="block w-full rounded-md border-gray-300 shadow-sm text-sm py-3 px-4 bg-gray-100 text-gray-600 cursor-not-allowed focus:ring-0 focus:border-gray-300">
+                </div>
+
+                <!-- Dropdown 5: Select Items to Add (Unchanged) -->
+                <div class="form-group mb-6">
+                    <label for="select-items-to-add" class="block text-sm font-medium text-gray-700 mb-1">Select Items to Add</label>
+                    <div class="relative">
+                        <select id="select-items-to-add" disabled class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-3 px-4 appearance-none disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="" selected>Select</option>
+                            <option value="item1">Item 1 (Placeholder)</option>
+                            <option value="item2">Item 2 (Placeholder)</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Dropdown 5: Select Items to Add (Single-Select) -->
-                <div class="form-group select-group">
-                    <label for="select-items-to-add">Select Items to Add</label>
-                    <select id="select-items-to-add" disabled>
-                        <option value="" selected>Select</option>
-                        <!-- To be populated later -->
-                        <option value="item1">Item 1 (Placeholder)</option>
-                        <option value="item2">Item 2 (Placeholder)</option>
-                    </select>
-                </div>
-                
-                <button class="save-btn" id="save-lab-settings" style="width: 100%;">
+                <button class="save-btn w-full flex items-center justify-center gap-2 px-4 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-300" id="save-lab-settings">
                     <i class="fa-solid fa-save"></i>
-                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <i class="fa-solid fa-spinner"></i>
                     <span>Save Settings</span>
                 </button>
             </div>
         `;
 
         const applicationSettingsContent = `
-            <div class="form-container">
-                <div class="logo-uploader-container">
-                    <h3>Application Logo</h3>
-                    <div class="logo-preview" id="logo-preview">
-                        <span class="placeholder">No logo uploaded</span>
-                        <img src="" alt="Logo Preview" id="logo-preview-img" style="display:none;">
+            <div class="form-container max-w-2xl mx-auto bg-white p-6 lg:p-8 rounded-xl shadow-md">
+                <div class="logo-uploader-container flex flex-col items-center gap-6">
+                    <h3 class="text-xl font-semibold text-gray-800">Application Logo</h3>
+                    <div class="logo-preview w-52 h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center bg-gray-50 p-2" id="logo-preview">
+                        <span class="placeholder text-sm text-gray-500">No logo uploaded</span>
+                        <img src="" alt="Logo Preview" id="logo-preview-img" class="max-w-full max-h-full object-contain" style="display:none;">
                     </div>
-                    <label for="logo-uploader" class="upload-btn">
+                    <label for="logo-uploader" class="upload-btn inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-md cursor-pointer hover:bg-blue-200 transition-colors">
                         <i class="fa-solid fa-upload"></i>
                         <span>Upload New Logo</span>
                     </label>
-                    <input type="file" id="logo-uploader" accept="image/png, image/jpeg, image/svg+xml">
+                    <input type="file" id="logo-uploader" accept="image/png, image/jpeg, image/svg+xml" class="hidden">
                 </div>
             </div>
         `;
 
         const workflowContent = `
-            <div class="page-grid page-container">
-                <div class="generator-container">
-                    <h3>Create New Workflow</h3>
-                    <div class="form-group">
-                        <label for="workflow-prompt">Describe the workflow goal:</label>
-                        <textarea id="workflow-prompt" class="generator-input" placeholder="e.g., 'Quality check process for Shell Thickness' or 'New user onboarding for lab technicians'"></textarea>
+            <div class="page-grid page-container max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div class="generator-container lg:col-span-3 bg-white p-6 lg:p-8 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-6">Create New Workflow</h3>
+                    <div class="form-group mb-4">
+                        <label for="workflow-prompt" class="block text-sm font-medium text-gray-700 mb-1">Describe the workflow goal:</label>
+                        <textarea id="workflow-prompt" class="generator-input block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm min-h-[100px]" placeholder="e.g., 'Quality check process for Shell Thickness' or 'New user onboarding for lab technicians'"></textarea>
                     </div>
-                    <button class="gemini-btn" id="generate-workflow-btn">
+                    <button class="gemini-btn inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300" id="generate-workflow-btn">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <i class="fa-solid fa-spinner"></i>
                         <span>Generate Workflow</span>
                     </button>
                     
-                    <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="workflow-result">Generated Workflow Steps:</label>
-                        <textarea id="workflow-result" class="generator-result" readonly></textarea>
+                    <div class="form-group mt-6 mb-4">
+                        <label for="workflow-result" class="block text-sm font-medium text-gray-700 mb-1">Generated Workflow Steps:</label>
+                        <textarea id="workflow-result" class="generator-result block w-full rounded-md border-gray-300 shadow-sm bg-gray-50 sm:text-sm min-h-[250px] resize-vertical" readonly></textarea>
                     </div>
 
-                    <button class="save-btn" id="save-workflow-btn" style="display: none;">
+                    <button class="save-btn inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-300" id="save-workflow-btn" style="display: none;">
                         <i class="fa-solid fa-save"></i>
-                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <i class="fa-solid fa-spinner"></i>
                         <span>Save Workflow</span>
                     </button>
                 </div>
-                <div class="saved-items-container">
-                    <h3>Saved Workflows</h3>
-                    <div class="saved-items-list" id="saved-workflows-list">
-                        <div class="saved-item-placeholder" id="workflow-placeholder">
+                <div class="saved-items-container lg:col-span-2 bg-white p-6 lg:p-8 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-6">Saved Workflows</h3>
+                    <div class="saved-items-list space-y-3" id="saved-workflows-list">
+                        <div class="saved-item-placeholder text-center py-8 text-sm text-gray-500 italic" id="workflow-placeholder">
                             No saved workflows yet
                         </div>
                     </div>
@@ -1214,34 +488,34 @@
         `;
 
         const emailTemplatesContent = `
-            <div class="page-grid page-container">
-                <div class="generator-container">
-                    <h3>Create New Email Template</h3>
-                    <div class="form-group">
-                        <label for="email-prompt">Describe the email's purpose:</label>
-                        <input type="text" id="email-prompt" class="generator-input" placeholder="e.g., 'Alert for failed lab test' or 'Weekly quality summary report'">
+            <div class="page-grid page-container max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div class="generator-container lg:col-span-3 bg-white p-6 lg:p-8 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-6">Create New Email Template</h3>
+                    <div class="form-group mb-4">
+                        <label for="email-prompt" class="block text-sm font-medium text-gray-700 mb-1">Describe the email's purpose:</label>
+                        <input type="text" id="email-prompt" class="generator-input block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="e.g., 'Alert for failed lab test' or 'Weekly quality summary report'">
                     </div>
-                    <button class="gemini-btn" id="generate-email-btn">
+                    <button class="gemini-btn inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300" id="generate-email-btn">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <i class="fa-solid fa-spinner"></i>
                         <span>Generate Email</span>
                     </button>
                     
-                    <div class="form-group" style="margin-top: 1.5rem;">
-                        <label for="email-result">Generated Email Template:</label>
-                        <textarea id="email-result" class="generator-result" readonly></textarea>
+                    <div class="form-group mt-6 mb-4">
+                        <label for="email-result" class="block text-sm font-medium text-gray-700 mb-1">Generated Email Template:</label>
+                        <textarea id="email-result" class="generator-result block w-full rounded-md border-gray-300 shadow-sm bg-gray-50 sm:text-sm min-h-[250px] resize-vertical" readonly></textarea>
                     </div>
 
-                    <button class="save-btn" id="save-email-btn" style="display: none;">
+                    <button class="save-btn inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-300" id="save-email-btn" style="display: none;">
                         <i class="fa-solid fa-save"></i>
-                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <i class="fa-solid fa-spinner"></i>
                         <span>Save Email Template</span>
                     </button>
                 </div>
-                <div class="saved-items-container">
-                    <h3>Saved Templates</h3>
-                    <div class="saved-items-list" id="saved-emails-list">
-                        <div class="saved-item-placeholder" id="email-placeholder">
+                <div class="saved-items-container lg:col-span-2 bg-white p-6 lg:p-8 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-6">Saved Templates</h3>
+                    <div class="saved-items-list space-y-3" id="saved-emails-list">
+                        <div class="saved-item-placeholder text-center py-8 text-sm text-gray-500 italic" id="email-placeholder">
                             No saved templates yet
                         </div>
                     </div>
@@ -1258,17 +532,19 @@
             let savedWorkflows = [];
             let savedEmailTemplates = [];
             let flatLabDatabase = []; // For easy lab lookup
+            let selectedLabCategory = null; // For Req 2.2
             
             // --- DOM Elements ---
-            const body = document.body;
+            const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
             const pageOverlay = document.getElementById('page-overlay');
             const contentArea = document.getElementById('content-area');
             const pageTitle = document.getElementById('page-title');
             const allNavLinks = document.querySelectorAll('.nav-link');
             const allNavToggles = document.querySelectorAll('.nav-toggle');
 
-            const mobileBreakpoint = 767;
+            const mobileBreakpoint = 1024; // Tailwind's `lg` breakpoint
 
             // --- Page Loading Functions ---
             
@@ -1302,7 +578,6 @@
 
             // --- Navigation Handlers ---
             
-            // Handle clicks on all nav links
             allNavLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -1327,9 +602,7 @@
                         case 'config-email':
                             loadPage('Email Templates', emailTemplatesContent, 'config-email');
                             break;
-                        // Add other cases here for LabWorks, Users, etc.
                         default:
-                            // Placeholder for non-implemented links
                             console.log(`Maps to ${navId}`);
                             setActiveNav(navId);
                             closeMobileSidebar();
@@ -1337,101 +610,149 @@
                 });
             });
 
-            // Handle clicks on submenu toggles
             allNavToggles.forEach(toggle => {
                 toggle.addEventListener('click', function() {
-                    if (body.classList.contains('sidebar-collapsed') && window.innerWidth > mobileBreakpoint) {
-                        return; // Do nothing if sidebar is collapsed on desktop
+                    // Don't allow opening submenus when sidebar is collapsed
+                    if (sidebar.classList.contains('lg:w-20')) {
+                        return;
                     }
-                    this.closest('.nav-item').classList.toggle('open');
+                    
+                    const navItem = this.closest('.nav-item');
+                    const submenu = navItem.querySelector('.submenu');
+                    const chevron = this.querySelector('.chevron-icon');
+
+                    navItem.classList.toggle('open');
+                    submenu.classList.toggle('hidden');
+                    chevron.classList.toggle('rotate-90');
                 });
             });
 
-            // Set the active navigation link
             function setActiveNav(navId) {
-                // Remove active from all links and parent toggles
-                allNavLinks.forEach(link => link.classList.remove('active'));
-                allNavToggles.forEach(toggle => toggle.classList.remove('active'));
-                document.querySelectorAll('.nav-item.open').forEach(item => item.classList.remove('open'));
-
-                const activeLink = document.querySelector(`.nav-item[data-nav-id="${navId}"] > .nav-link`);
+                // Remove active classes
+                document.querySelectorAll('.nav-link, .nav-toggle').forEach(el => el.classList.remove('active', 'bg-blue-600', 'text-white'));
                 
-                if (activeLink) {
-                    activeLink.classList.add('active');
-                    const parentToggle = activeLink.closest('.submenu')?.closest('.nav-item');
-                    if(parentToggle) {
-                        parentToggle.classList.add('open');
-                        parentToggle.querySelector('.nav-toggle')?.classList.add('active');
+                // Close all open submenus
+                document.querySelectorAll('.nav-item.open').forEach(item => {
+                    item.classList.remove('open');
+                    item.querySelector('.submenu')?.classList.add('hidden');
+                    item.querySelector('.chevron-icon')?.classList.remove('rotate-90');
+                });
+
+                const activeEl = document.querySelector(`.nav-item[data-nav-id="${navId}"]`);
+                if (!activeEl) return;
+
+                const link = activeEl.querySelector('.nav-link');
+                
+                if (link) {
+                    // It's a top-level link
+                    link.classList.add('active', 'bg-blue-600', 'text-white');
+                    const parentToggleItem = link.closest('.submenu')?.closest('.nav-item');
+                    if(parentToggleItem) {
+                        // This is a submenu link
+                        parentToggleItem.classList.add('open');
+                        parentToggleItem.querySelector('.nav-toggle').classList.add('active', 'bg-blue-600', 'text-white');
+                        parentToggleItem.querySelector('.submenu').classList.remove('hidden');
+                        parentToggleItem.querySelector('.chevron-icon').classList.add('rotate-90');
                     }
                 } else {
-                    // It's a submenu link
-                    const activeSubLink = document.querySelector(`.nav-item[data-nav-id="${navId}"] .nav-link`);
+                    // It's a submenu link (clicked from the submenu itself)
+                    const activeSubLink = activeEl.querySelector('.nav-link');
                     if(activeSubLink) {
-                        activeSubLink.classList.add('active');
-                         const parentToggle = activeSubLink.closest('.submenu').closest('.nav-item');
-                         if(parentToggle) {
-                            parentToggle.classList.add('open');
-                            parentToggle.querySelector('.nav-toggle').classList.add('active');
-                         }
+                        activeSubLink.classList.add('active', 'text-blue-600');
+                        activeSubLink.classList.remove('text-gray-500'); // ensure it's highlighted
+                        
+                        const parentToggleItem = activeEl.closest('.submenu').closest('.nav-item');
+                        if(parentToggleItem) {
+                            parentToggleItem.classList.add('open');
+                            parentToggleItem.querySelector('.nav-toggle').classList.add('active', 'bg-blue-600', 'text-white');
+                            parentToggleItem.querySelector('.submenu').classList.remove('hidden');
+                            parentToggleItem.querySelector('.chevron-icon').classList.add('rotate-90');
+                        }
                     }
                 }
             }
 
 
-            // --- Sidebar Toggle Logic ---
+            // --- Sidebar Toggle Logic (REQ 1) ---
+            function toggleDesktopSidebar() {
+                sidebar.classList.toggle('lg:w-64');
+                sidebar.classList.toggle('lg:w-20');
+
+                // Toggle logo container padding and justification
+                const logoContainer = document.getElementById('sidebar-logo-container');
+                logoContainer.classList.toggle('lg:justify-start');
+                logoContainer.classList.toggle('lg:justify-center');
+                logoContainer.classList.toggle('px-4');
+
+                // Toggle nav text and chevrons
+                document.querySelectorAll('.nav-text, .chevron-icon').forEach(el => {
+                    el.classList.toggle('lg:hidden');
+                });
+                
+                // Toggle justification for nav links
+                document.querySelectorAll('.nav-link, .nav-toggle').forEach(el => {
+                    el.classList.toggle('lg:justify-center');
+                });
+
+                // Close any open submenus
+                document.querySelectorAll('.nav-item.open').forEach(item => {
+                    item.classList.remove('open');
+                    item.querySelector('.submenu')?.classList.add('hidden');
+                    item.querySelector('.chevron-icon')?.classList.remove('rotate-90');
+                });
+            }
+
+            function toggleMobileSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                pageOverlay.classList.toggle('opacity-0');
+                pageOverlay.classList.toggle('pointer-events-none');
+            }
+
             sidebarToggle.addEventListener('click', function() {
-                if (window.innerWidth <= mobileBreakpoint) {
-                    // Mobile: toggle flyout
-                    body.classList.toggle('sidebar-mobile-open');
+                if (window.innerWidth < mobileBreakpoint) {
+                    toggleMobileSidebar();
                 } else {
-                    // Desktop: toggle collapse
-                    body.classList.toggle('sidebar-collapsed');
-                    // Close any open submenus when collapsing
-                    if (body.classList.contains('sidebar-collapsed')) {
-                        document.querySelectorAll('.nav-item.open').forEach(item => {
-                            item.classList.remove('open');
-                        });
-                    }
+                    toggleDesktopSidebar();
                 }
             });
-            
-            // Close mobile sidebar when overlay is clicked
-            pageOverlay.addEventListener('click', function() {
-                body.classList.remove('sidebar-mobile-open');
-            });
+
+            sidebarCloseBtn.addEventListener('click', toggleMobileSidebar);
+            pageOverlay.addEventListener('click', toggleMobileSidebar);
 
             function closeMobileSidebar() {
-                if (window.innerWidth <= mobileBreakpoint) {
-                    body.classList.remove('sidebar-mobile-open');
+                if (window.innerWidth < mobileBreakpoint) {
+                    sidebar.classList.add('-translate-x-full');
+                    pageOverlay.classList.add('opacity-0', 'pointer-events-none');
                 }
             }
             
-            // --- Toast Notification (IMPROVED) ---
+            // --- Toast Notification (REQ 2.3) ---
             function showToast(message, type = 'success') {
                 const toast = document.getElementById('toast-notification');
                 const toastMessage = document.getElementById('toast-message');
-                const toastIcon = toast.querySelector('i');
+                const toastIcon = document.getElementById('toast-icon');
                 
                 toastMessage.textContent = message;
                 
                 // Reset classes
-                toast.classList.remove('success', 'error');
-                toastIcon.className = ''; // Clear all icon classes
+                toast.classList.remove('bg-green-500', 'bg-red-500', 'bg-yellow-500');
+                toastIcon.className = ''; 
 
-                // Apply new classes based on type
-                if (type === 'error') {
-                    toast.classList.add('error');
-                    toastIcon.classList.add('fa-solid', 'fa-times-circle');
+                if (type === 'error' || type === 'warning') {
+                    toast.classList.add(type === 'error' ? 'bg-red-500' : 'bg-yellow-500');
+                    toastIcon.classList.add('fa-solid', 'fa-exclamation-triangle', 'text-xl');
                 } else {
-                    toast.classList.add('success');
-                    toastIcon.classList.add('fa-solid', 'fa-check-circle');
+                    toast.classList.add('bg-green-500');
+                    toastIcon.classList.add('fa-solid', 'fa-check-circle', 'text-xl');
                 }
                 
-                toast.classList.add('show');
+                toast.classList.add('translate-x-0');
+                toast.classList.remove('translate-x-[120%]');
                 
                 setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000); // Hide after 3 seconds
+                    toast.classList.remove('translate-x-0');
+                    toast.classList.add('translate-x-[120%]');
+                }, type === 'warning' ? 4500 : 3000); // Longer duration for warning
             }
 
             // --- Logo Upload Logic ---
@@ -1442,15 +763,10 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imageUrl = e.target.result;
-                    // Update preview
                     document.getElementById('logo-preview-img').src = imageUrl;
                     document.getElementById('logo-preview-img').style.display = 'block';
                     document.querySelector('.logo-preview .placeholder').style.display = 'none';
-                    
-                    // Update sidebar logo
                     document.getElementById('sidebar-logo-img').src = imageUrl;
-                    
-                    // Save to localStorage
                     localStorage.setItem('eqlm-logo', imageUrl);
                     showToast('Logo updated!');
                 };
@@ -1460,10 +776,7 @@
             function loadLogoFromStorage() {
                 const savedLogo = localStorage.getItem('eqlm-logo');
                 if (savedLogo) {
-                    // Update sidebar
                     document.getElementById('sidebar-logo-img').src = savedLogo;
-                    
-                    // Update preview page (if it exists)
                     const previewImg = document.getElementById('logo-preview-img');
                     if (previewImg) {
                         previewImg.src = savedLogo;
@@ -1474,19 +787,13 @@
             }
 
             // --- GEMINI API CALL LOGIC ---
-
-            /**
-             * Retries fetch with exponential backoff.
-             */
             async function retryFetch(url, options, retries = 5, delay = 1000) {
                 try {
                     const response = await fetch(url, options);
                     if (!response.ok) {
-                         // Don't retry on client errors (4xx)
                         if (response.status >= 400 && response.status < 500) {
                             throw new Error(`API Client Error: ${response.status} ${response.statusText}`);
                         }
-                        // Retry on server errors (5xx)
                         throw new Error(`API Server Error: ${response.status} ${response.statusText}`);
                     }
                     return response;
@@ -1500,9 +807,6 @@
                 }
             }
 
-            /**
-             * Generic function to call the Gemini API.
-             */
             async function callGeminiAPI(userPrompt, systemPrompt, resultElement, loaderElement, buttonElement, saveButton) {
                 buttonElement.classList.add('loading');
                 buttonElement.disabled = true;
@@ -1529,13 +833,12 @@
                     const response = await retryFetch(apiUrl, fetchOptions);
                     const result = await response.json();
 
-                    // --- IMPROVED: More robust response check ---
                     if (result.candidates && result.candidates.length > 0) {
                         const candidate = result.candidates[0];
                         if (candidate.content?.parts?.[0]?.text) {
                             const text = candidate.content.parts[0].text;
                             resultElement.value = text;
-                            if(saveButton) saveButton.style.display = 'inline-block';
+                            if(saveButton) saveButton.style.display = 'inline-flex';
                         } else {
                             throw new Error("API returned a candidate but no text content.");
                         }
@@ -1554,9 +857,6 @@
                 }
             }
 
-            /**
-             * Handles the "Generate Workflow" button click.
-             */
             function handleWorkflowGeneration() {
                 const promptElement = document.getElementById('workflow-prompt');
                 const resultElement = document.getElementById('workflow-result');
@@ -1568,15 +868,10 @@
                     showToast('Please describe the workflow goal.', 'error');
                     return;
                 }
-
                 const systemPrompt = "You are an expert in industrial plant management and quality assurance. Generate a clear, concise, step-by-step workflow based on the user's request. Format the output as a numbered list.";
-                
                 callGeminiAPI(userPrompt, systemPrompt, resultElement, null, buttonElement, saveButton);
             }
 
-            /**
-             * Handles the "Generate Email" button click.
-             */
             function handleEmailGeneration() {
                 const promptElement = document.getElementById('email-prompt');
                 const resultElement = document.getElementById('email-result');
@@ -1588,9 +883,7 @@
                     showToast("Please describe the email's purpose.", 'error');
                     return;
                 }
-
                 const systemPrompt = "You are a professional communications manager for an industrial plant. Write a clear and concise email template for the given purpose. The template must include a subject line (prefixed with 'Subject:') and a body. Use [BRACKETED_PLACEHOLDERS] for any dynamic content (e.g., [Plant_Name], [Test_Name], [Date]).";
-
                 callGeminiAPI(userPrompt, systemPrompt, resultElement, null, buttonElement, saveButton);
             }
             
@@ -1600,7 +893,6 @@
                 const resultText = document.getElementById('workflow-result').value;
                 if (!resultText) return;
                 
-                // Use the first line as the title, or a snippet
                 const title = resultText.split('\n')[0].replace(/^\d+\.\s*/, '') || 'Workflow';
                 savedWorkflows.push({ id: Date.now(), title: title, content: resultText });
                 
@@ -1613,14 +905,15 @@
                 const placeholder = document.getElementById('workflow-placeholder');
                 if (!list) return;
                 
-                list.innerHTML = ''; // Clear list
+                if (placeholder) placeholder.remove(); 
+                list.innerHTML = ''; 
                 
                 if (savedWorkflows.length === 0) {
                     list.appendChild(placeholder);
                 } else {
                     savedWorkflows.forEach(wf => {
                         const item = document.createElement('div');
-                        item.className = 'saved-item workflow';
+                        item.className = 'saved-item bg-gray-100 border border-gray-200 rounded-lg p-4 font-medium text-sm text-gray-700';
                         item.textContent = wf.title;
                         list.appendChild(item);
                     });
@@ -1640,7 +933,7 @@
                     body = resultText.substring(resultText.indexOf('\n') + 1).trim();
                 }
 
-                savedEmailTemplates.push({ id: Date.now(), subject: subject, body: body });
+                savedEmailTemplates.push({ id: Date.now(), subject: subject, body: body.split('\n')[0] });
                 
                 renderSavedEmails();
                 showToast('Email template saved!');
@@ -1651,72 +944,66 @@
                  const placeholder = document.getElementById('email-placeholder');
                  if (!list) return;
                 
-                 list.innerHTML = ''; // Clear list
+                 if (placeholder) placeholder.remove();
+                 list.innerHTML = ''; 
                 
                  if (savedEmailTemplates.length === 0) {
                      list.appendChild(placeholder);
                  } else {
                      savedEmailTemplates.forEach(email => {
                          const item = document.createElement('div');
-                         item.className = 'saved-item email';
+                         item.className = 'saved-item email bg-gray-100 border border-gray-200 rounded-lg p-4';
                          item.innerHTML = `
-                             <span class="item-title">${email.subject}</span>
-                             <span class="item-body">${email.body.split('\n')[0]}</span>
+                             <span class="item-title block text-sm font-semibold text-gray-800 mb-1">${email.subject}</span>
+                             <span class="item-body block text-sm text-gray-600 overflow-hidden text-ellipsis whitespace-nowrap">${email.body}</span>
                          `;
                          list.appendChild(item);
                      });
                  }
             }
             
-            // --- Save Assign Lab Properties (IMPROVED) ---
+            // --- Save Assign Lab Properties ---
             function handleSaveAssignLab() {
                 const button = document.getElementById('save-lab-settings');
                 button.classList.add('loading');
                 button.disabled = true;
 
-                // --- NEW: Gather all selected data ---
-                const selectedLabId = document.getElementById('select-lab').value;
-                const selectedLabText = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].text;
-                const selectedPlants = getMultiSelectValues('select-plant-options');
-                const selectedSection = document.getElementById('select-section').value;
-                const selectedBuildings = getMultiSelectValues('select-building-options');
+                // REQ 4: Get values from new fields
+                const selectedLabIds = getMultiSelectValues('select-lab-options');
+                const selectedPlants = document.getElementById('auto-plant').value;
+                const selectedSection = document.getElementById('auto-section').value;
+                const selectedBuildings = document.getElementById('auto-building').value;
                 const selectedItem = document.getElementById('select-items-to-add').value;
 
-                // Check for completion before saving
-                if (!selectedLabId || selectedPlants.length === 0 || !selectedSection || !selectedItem) {
-                    showToast('Please fill out all fields.', 'error');
+                if (selectedLabIds.length === 0 || !selectedItem) {
+                    showToast('Please select labs and an item to add.', 'error');
                     button.classList.remove('loading');
                     button.disabled = false;
                     return;
                 }
 
                 const saveData = {
-                    labId: selectedLabId,
-                    labPath: selectedLabText,
+                    labIds: selectedLabIds,
+                    labCategory: selectedLabCategory,
                     plants: selectedPlants,
                     section: selectedSection,
-                    // Handle "no building" case (e.g. Fernley) vs. selected buildings
-                    buildingsOrGroups: selectedBuildings.length > 0 ? selectedBuildings : "N/A",
+                    buildingsOrGroups: selectedBuildings,
                     itemToAdd: selectedItem
                 };
 
-                // Log the data to the console for this prototype
                 console.log("Saving Lab Settings:", saveData);
-                // --- End new logic ---
                 
-                // Simulate network request
                 setTimeout(() => {
                     button.classList.remove('loading');
                     button.disabled = false;
                     showToast('Settings saved successfully!');
-                    // To-do: Reset the form or navigate away
                 }, 1500);
             }
 
 
             // --- Custom Multi-Select Dropdown Logic ---
             
-            // MODIFIED: updateMultiselectText to be more logical
+            // This is a generic helper, NOT used by the new Lab Select
             function updateMultiselectText(container) {
                 const options = container.querySelectorAll('.multiselect-option input[type="checkbox"]');
                 const textElement = container.querySelector('.multiselect-text');
@@ -1725,80 +1012,63 @@
                 
                 if (selectedOptions.length === 0) {
                     textElement.textContent = 'None selected';
-                    textElement.classList.add('placeholder');
+                    textElement.classList.add('placeholder', 'text-gray-500');
                 } else if (selectedOptions.length <= 3) {
-                    // Join 1, 2, or 3 names
                     textElement.textContent = selectedOptions.map(opt => opt.nextElementSibling.textContent).join(', ');
-                    textElement.classList.remove('placeholder');
+                    textElement.classList.remove('placeholder', 'text-gray-500');
                 } else {
-                    // Show "4 selected", "5 selected", etc.
                     textElement.textContent = `${selectedOptions.length} selected`;
-                    textElement.classList.remove('placeholder');
+                    textElement.classList.remove('placeholder', 'text-gray-500');
                 }
             }
             
             // Global click listener to close dropdowns
-            document.addEventListener('click', () => {
+            document.addEventListener('click', (e) => {
                 document.querySelectorAll('.custom-multiselect.open').forEach(dropdown => {
-                    dropdown.classList.remove('open');
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.classList.remove('open');
+                    }
                 });
             });
 
-            // --- Assign Lab Properties Page Logic (IMPROVED) ---
+            // --- Assign Lab Properties Page Logic (REQ 2, 3, 4) ---
             
-            /**
-             * This is the main initializer for the "Assign Lab Properties" page.
-             * It builds the flat lab database and sets up the first dropdown.
-             */
             function initializeAssignLabPage() {
-                // 1. Flatten the lab data for easy lookup
                 flatLabDatabase = [];
+                selectedLabCategory = null; // Reset state
                 
-                /**
-                 * Helper to recursively parse labs from the plantData object.
-                 * This handles labs at any level (section, building, or nested group).
-                 */
                 function parseLabs(labData, plant, section, groupPath = null) {
                     Object.keys(labData).forEach(labName => {
-                        // Check for nested lab groups (e.g., "Retest")
                         if (labData[labName].labs) {
-                            // This is a subgroup. Recursively parse *its* labs, appending to the group path.
                             const newGroupPath = groupPath ? `${groupPath} > ${labName}` : labName;
                             parseLabs(labData[labName].labs, plant, section, newGroupPath);
                         } else {
-                            // This is a standard lab
                             const pathParts = [plant, section];
                             if (groupPath) pathParts.push(groupPath);
                             pathParts.push(labName);
 
                             flatLabDatabase.push({
-                                id: pathParts.join('_').replace(/ > /g, '_'), // Create a unique ID
-                                name: labName,
+                                id: pathParts.join('_').replace(/ > /g, '_').replace(/ /g, ''), 
+                                name: labName, // This is the "category"
                                 plant: plant,
                                 section: section,
-                                buildingOrGroup: groupPath, // Stores "Building 1", "Retest", "Building 1 > Retest", or null
-                                path: `${labName} (${pathParts.join(' > ')})` // Full display path
+                                buildingOrGroup: groupPath, 
+                                path: `${labName} (${pathParts.join(' > ')})`
                             });
                         }
                     });
                 }
 
-                // Iterate over the main plantData object
                 Object.keys(plantData).forEach(plantName => {
                     Object.keys(plantData[plantName]).forEach(sectionName => {
                         const section = plantData[plantName][sectionName];
-                        
-                        // Case 1: Labs directly under section (e.g., Fernley > Decking, which has no buildings)
                         if (Object.keys(section.buildings).length === 0 && section.labs) {
                             parseLabs(section.labs, plantName, sectionName, null);
                         }
-                        
-                        // Case 2: Labs under buildings (e.g., Winchester > Decking)
                         if (Object.keys(section.buildings).length > 0) {
                             Object.keys(section.buildings).forEach(buildingName => {
                                 const building = section.buildings[buildingName];
                                 if (building.labs) {
-                                    // Pass the building name as the top-level group path
                                     parseLabs(building.labs, plantName, sectionName, buildingName);
                                 }
                             });
@@ -1806,239 +1076,155 @@
                     });
                 });
                 
-                // 2. Populate the initial Lab dropdown
-                const labSelect = document.getElementById('select-lab');
-                labSelect.innerHTML = '<option value="" selected>Select</option>'; // Reset
-                
-                // Get unique labs based on their full display path
+                // REQ 2.1: Populate new multi-select
+                const labOptionsContainer = document.getElementById('select-lab-options');
+                labOptionsContainer.innerHTML = '';
                 const uniqueLabs = [...new Map(flatLabDatabase.map(lab => [lab.path, lab])).values()];
-                uniqueLabs.sort((a,b) => a.path.localeCompare(b.path)); // Sort alphabetically
+                uniqueLabs.sort((a,b) => a.path.localeCompare(b.path));
                 
                 uniqueLabs.forEach(lab => {
-                    const option = document.createElement('option');
-                    option.value = lab.id; // Use the unique ID
-                    option.textContent = lab.path;
-                    option.dataset.labName = lab.name; // Store original lab name
-                    labSelect.appendChild(option);
+                    const optionHTML = `
+                        <label class="multiselect-option flex items-center p-3 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer" 
+                               data-category="${lab.name}" 
+                               data-lab-id="${lab.id}">
+                            <input type="checkbox" value="${lab.id}" class="mr-3 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span>${lab.path}</span>
+                        </label>
+                    `;
+                    labOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
                 });
 
-                // 3. Add event listeners for cascading logic
-                labSelect.addEventListener('change', onLabChange);
-                document.getElementById('select-section').addEventListener('change', onSectionChange);
+                // Add listeners to new lab checkboxes
+                labOptionsContainer.querySelectorAll('.multiselect-option').forEach(el => {
+                    // Use 'click' on the label to handle prevention
+                    el.addEventListener('click', handleLabSelection, true); 
+                });
+                
+                initializeMultiSelect(document.getElementById('select-lab-wrapper'), true); // Skip initial text update
                 document.getElementById('select-items-to-add').addEventListener('change', onItemsChange);
             }
 
-            /**
-             * Called when the main "Select Lab" dropdown changes.
-             * Populates the "Select Plant" multi-select.
-             */
-            function onLabChange(e) {
-                const selectedLabId = e.target.value;
-                const selectedLabName = e.target.options[e.target.selectedIndex].dataset.labName;
+            // REQ 2.2: Category Matching Logic
+            function handleLabSelection(e) {
+                e.preventDefault(); // Manually control checkbox
+                e.stopPropagation();
 
-                const plantSelectWrapper = document.getElementById('select-plant-wrapper');
-                const plantOptionsContainer = document.getElementById('select-plant-options');
+                const label = e.currentTarget;
+                const checkbox = label.querySelector('input[type="checkbox"]');
+                const clickedCategory = label.dataset.category;
                 
-                // Reset all subsequent dropdowns
-                resetMultiSelect('select-plant-wrapper', 'Select');
-                resetDropdown('select-section', 'Select');
-                resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select');
-
-                if (!selectedLabId) {
-                    plantSelectWrapper.classList.add('disabled');
-                    return;
+                // Case 1: Trying to check a new box
+                if (!checkbox.checked) {
+                    if (selectedLabCategory === null) {
+                        // First selection, set the category
+                        selectedLabCategory = clickedCategory;
+                        checkbox.checked = true;
+                    } else if (clickedCategory === selectedLabCategory) {
+                        // Category matches, allow selection
+                        checkbox.checked = true;
+                    } else {
+                        // REQ 2.3: Category mismatch, show toast
+                        showToast(`Please select labs from the "${selectedLabCategory}" category.`, 'warning');
+                        return; // Do not check the box
+                    }
+                } 
+                // Case 2: Trying to uncheck a box
+                else {
+                    checkbox.checked = false;
                 }
                 
-                // Find all plants that have this lab name
-                const relevantPlants = [...new Set(flatLabDatabase
-                    .filter(lab => lab.name === selectedLabName)
-                    .map(lab => lab.plant)
-                )];
-
-                plantOptionsContainer.innerHTML = ''; // Clear options
+                const newSelectedOptions = getMultiSelectValues('select-lab-options');
                 
-                if (relevantPlants.length > 0) {
-                    relevantPlants.forEach(plantName => {
-                        const optionHTML = `
-                            <label class="multiselect-option">
-                                <input type="checkbox" value="${plantName}" checked>
-                                <span>${plantName}</span>
-                            </label>
-                        `;
-                        plantOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
+                // Case 3: Just unchecked the last box
+                if (newSelectedOptions.length === 0) {
+                    selectedLabCategory = null;
+                    // Re-enable all options
+                    document.querySelectorAll('#select-lab-options .multiselect-option').forEach(opt => {
+                        opt.classList.remove('disabled');
+                        opt.querySelector('input').disabled = false;
                     });
-                    
-                    plantSelectWrapper.classList.remove('disabled');
-                    // Add change listeners to the new checkboxes
-                    plantOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.addEventListener('change', onPlantChange);
+                } else {
+                    // Filter options based on the locked-in category
+                    document.querySelectorAll('#select-lab-options .multiselect-option').forEach(opt => {
+                        if (opt.dataset.category !== selectedLabCategory) {
+                            opt.classList.add('disabled');
+                            opt.querySelector('input').disabled = true;
+                        } else {
+                            opt.classList.remove('disabled');
+                            opt.querySelector('input').disabled = false;
+                        }
                     });
                 }
                 
-                // Initialize multi-select interaction
-                initializeMultiSelect(plantSelectWrapper.id);
-                // Trigger change to update text and cascade
-                onPlantChange();    
+                updateLabMultiselectText(); // REQ 3
+                populateReadOnlyFields(); // REQ 4
             }
 
-            /**
-             * Called when the "Select Plant" multi-select changes.
-             * Populates the "Select Section" dropdown.
-             */
-            function onPlantChange() {
-                const selectedLabName = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].dataset.labName;
+            // REQ 3: Custom Placeholder
+            function updateLabMultiselectText() {
+                const wrapper = document.getElementById('select-lab-wrapper');
+                const textElement = wrapper.querySelector('.multiselect-text');
+                const selectedOptions = getMultiSelectValues('select-lab-options');
                 
-                const selectedPlants = getMultiSelectValues('select-plant-options');
-                const sectionSelect = document.getElementById('select-section');
-
-                // Reset subsequent dropdowns
-                resetDropdown('select-section', 'Select');
-                resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select');
-                
-                if (!selectedLabName || selectedPlants.length === 0) {
-                    sectionSelect.disabled = true;
-                    return;
-                }
-
-                // Find sections in the selected plants that contain the selected lab
-                const relevantSections = [...new Set(flatLabDatabase
-                    .filter(lab =>    
-                        lab.name === selectedLabName &&
-                        selectedPlants.includes(lab.plant)
-                    )
-                    .map(lab => lab.section)
-                )];
-                
-                sectionSelect.innerHTML = '<option value="" selected>Select</option>'; // Reset
-                
-                if(relevantSections.length > 0) {
-                    relevantSections.forEach(sectionName => {
-                        const option = document.createElement('option');
-                        option.value = sectionName;
-                        option.textContent = sectionName;
-                        sectionSelect.appendChild(option);
-                    });
-                    sectionSelect.disabled = false;
+                if (selectedOptions.length === 0) {
+                    textElement.textContent = 'Select Lab(s)';
+                    textElement.classList.add('placeholder', 'text-gray-500');
                 } else {
-                    sectionSelect.disabled = true;
+                    textElement.textContent = `${selectedLabCategory} (${selectedOptions.length} location${selectedOptions.length > 1 ? 's' : ''})`;
+                    textElement.classList.remove('placeholder', 'text-gray-500');
                 }
             }
 
-            /**
-             * Called when the "Select Section" dropdown changes.
-             * Populates the "Select Building / Group" multi-select.
-             */
-            function onSectionChange(e) {
-                const selectedSection = e.target.value;
-                const selectedLabName = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].dataset.labName;
-                const selectedPlants = getMultiSelectValues('select-plant-options');
-
-                const buildingSelectWrapper = document.getElementById('select-building-wrapper');
-                const buildingOptionsContainer = document.getElementById('select-building-options');
+            // REQ 4: Auto-Populate Read-Only Fields
+            function populateReadOnlyFields() {
+                const selectedLabIds = getMultiSelectValues('select-lab-options');
+                const plantInput = document.getElementById('auto-plant');
+                const sectionInput = document.getElementById('auto-section');
+                const buildingInput = document.getElementById('auto-building');
                 
-                // Reset subsequent dropdowns
-                resetMultiSelect('select-building-wrapper', 'Select');
-                resetDropdown('select-items-to-add', 'Select');
-
-                if (!selectedSection) {
-                    buildingSelectWrapper.classList.add('disabled');
-                    return;
-                }
-                
-                // Find buildings or groups (e.g., "Retest", "Building 1 > Retest")
-                const relevantBuildingsOrGroups = [...new Set(flatLabDatabase
-                    .filter(lab =>    
-                        lab.name === selectedLabName &&
-                        selectedPlants.includes(lab.plant) &&
-                        lab.section === selectedSection &&
-                        lab.buildingOrGroup // Check if this field is not null
-                    )
-                    .map(lab => lab.buildingOrGroup)
-                )];
-
-                buildingOptionsContainer.innerHTML = ''; // Clear options
-
-                if (relevantBuildingsOrGroups.length > 0) {
-                    relevantBuildingsOrGroups.forEach(groupName => {
-                        const optionHTML = `
-                            <label class="multiselect-option">
-                                <input type="checkbox" value="${groupName}" checked>
-                                <span>${groupName}</span>
-                            </label>
-                        `;
-                        buildingOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
-                    });
-
-                    buildingSelectWrapper.classList.remove('disabled');
-                    // Add change listeners
-                    buildingOptionsContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.addEventListener('change', onBuildingChange);
-                    });
-                } else {
-                    // No buildings for this combo (e.g., Fernley > Decking > Embossing)
-                    // This means the "Items to Add" should be enabled directly
-                    buildingSelectWrapper.classList.add('disabled');
-                    onBuildingChange(); // Trigger next step
-                    return;
-                }
-
-                initializeMultiSelect(buildingSelectWrapper.id);
-                onBuildingChange(); // Trigger update
-            }
-
-            /**
-             * Called when the "Select Building" multi-select changes.
-             * Populates the "Select Items to Add" dropdown.
-             */
-            function onBuildingChange() {
-                const itemsSelect = document.getElementById('select-items-to-add');
-                const selectedBuildings = getMultiSelectValues('select-building-options');
-                
-                // Check if the building dropdown is enabled AND has selections,
-                // OR if the building dropdown is disabled (meaning no buildings apply)
-                const buildingsWrapper = document.getElementById('select-building-wrapper');
-                const isEnabled = !buildingsWrapper.classList.contains('disabled');
-                
-                if ((isEnabled && selectedBuildings.length > 0) || !isEnabled) {
-                    // This is where you would fetch items based on lab, plant, section, AND buildings
-                    // For now, just enable the dropdown.
-                    itemsSelect.disabled = false;
-                    resetDropdown('select-items-to-add', 'Select'); // Keep placeholder
-                    // To-do: Populate with actual items
-                    // For demo, re-add placeholders
-                    itemsSelect.innerHTML = `
-                        <option value="" selected>Select</option>
-                        <option value="item1">Item 1 (Placeholder)</option>
-                        <option value="item2">Item 2 (Placeholder)</option>
-                    `;
-                } else {
-                    itemsSelect.disabled = true;
+                if (selectedLabIds.length === 0) {
+                    plantInput.value = '';
+                    sectionInput.value = '';
+                    buildingInput.value = '';
                     resetDropdown('select-items-to-add', 'Select');
+                    return;
                 }
+                
+                const plants = new Set();
+                const sections = new Set();
+                const buildings = new Set();
+
+                const selectedLabs = flatLabDatabase.filter(lab => selectedLabIds.includes(lab.id));
+                
+                selectedLabs.forEach(lab => {
+                    plants.add(lab.plant);
+                    sections.add(lab.section);
+                    if (lab.buildingOrGroup) {
+                        buildings.add(lab.buildingOrGroup);
+                    }
+                });
+                
+                plantInput.value = [...plants].join(', ') || 'N/A';
+                sectionInput.value = [...sections].join(', ') || 'N/A';
+                buildingInput.value = [...buildings].join(', ') || 'N/A';
+                
+                // Enable the final "Items to Add" dropdown
+                document.getElementById('select-items-to-add').disabled = false;
             }
-            
+
             function onItemsChange() {
                 // Logic when "Items to Add" is changed
             }
 
             // --- Multi-Select Helper Functions ---
-
-            /**
-             * Initializes the open/close behavior for a *single* multi-select dropdown.
-             */
-            function initializeMultiSelect(wrapperId) {
-                const container = document.getElementById(wrapperId);
+            function initializeMultiSelect(container, skipInitialTextUpdate = false) {
                 if (!container) return;
-
                 const display = container.querySelector('.multiselect-display');
                 
-                // Toggle dropdown
                 display.addEventListener('click', (e) => {
                     if (container.classList.contains('disabled')) return;
                     e.stopPropagation();
-                    // Close other dropdowns
+                    
                     document.querySelectorAll('.custom-multiselect.open').forEach(openDropdown => {
                         if (openDropdown !== container) {
                             openDropdown.classList.remove('open');
@@ -2047,21 +1233,16 @@
                     container.classList.toggle('open');
                 });
                 
-                // Update text
-                updateMultiselectText(container);
+                if (!skipInitialTextUpdate) {
+                    updateMultiselectText(container);
+                }
             }
             
-            /**
-             * Gets an array of checked values from a multi-select options container.
-             */
             function getMultiSelectValues(optionsContainerId) {
                 return Array.from(document.querySelectorAll(`#${optionsContainerId} input[type="checkbox"]:checked`))
                     .map(cb => cb.value);
             }
 
-            /**
-             * Resets a standard <select> dropdown.
-             */
             function resetDropdown(selectId, placeholderText) {
                 const select = document.getElementById(selectId);
                 if (select) {
@@ -2069,32 +1250,22 @@
                     select.disabled = true;
                 }
             }
-            
-            /**
-             * Resets a custom multi-select dropdown.
-             */
-            function resetMultiSelect(wrapperId, placeholderText) {
-                const wrapper = document.getElementById(wrapperId);
-                const optionsContainer = document.getElementById(wrapperId.replace('-wrapper', '-options'));
-                const textElement = wrapper.querySelector('.multiselect-text');
-                
-                if (wrapper) {
-                    wrapper.classList.add('disabled');
-                    wrapper.classList.remove('open');
-                }
-                if (optionsContainer) {
-                    optionsContainer.innerHTML = '';
-                }
-                if (textElement) {
-                    textElement.textContent = placeholderText;
-                    textElement.classList.add('placeholder');
-                }
-            }
 
             // --- Initial Load ---
-            loadLogoFromStorage(); // Load logo for sidebar on initial load
-            loadPage('Plant Dashboard', dashboardContent, 'dashboard'); // Load default page
+            loadLogoFromStorage(); 
+            loadPage('Plant Dashboard', dashboardContent, 'dashboard');
             
+            // Set initial sidebar state based on screen size
+            if (window.innerWidth < mobileBreakpoint) {
+                // Mobile: start hidden
+                sidebar.classList.add('-translate-x-full');
+            } else {
+                // Desktop: start collapsed
+                sidebar.classList.remove('-translate-x-full');
+                toggleDesktopSidebar(); // Start collapsed
+            }
+            sidebar.style.visibility = 'visible';
+
         });
     </script>
 </body>
