@@ -52,13 +52,12 @@
         }
 
         /* -------------------------
-         * Toast Notification (New)
+         * Toast Notification (Improved)
          * ------------------------- */
         .toast-notification {
             position: fixed;
             top: 20px;
             right: 20px;
-            background-color: #28a745; /* Success green */
             color: #ffffff;
             padding: 1rem 1.5rem;
             border-radius: var(--radius-md);
@@ -73,6 +72,15 @@
         .toast-notification.show {
             transform: translateX(0);
         }
+        
+        /* --- IMPROVEMENT: Added type-specific styles --- */
+        .toast-notification.success {
+            background-color: #28a745; /* Success green */
+        }
+        .toast-notification.error {
+            background-color: #dc3545; /* Error red */
+        }
+        
         .toast-notification i {
             font-size: 1.25rem;
         }
@@ -942,7 +950,7 @@
     </div>
 
     <script>
-        // --- DATA HIERARCHY (New) ---
+        // --- DATA HIERARCHY ---
         // This object represents the entire data structure for the Assign Lab Properties page.
         const plantData = {
             "Fernley": {
@@ -954,7 +962,7 @@
                         "Moisture": {"items": []},
                         "Ski-tipping": {"items": []},
                         "Retest": {
-                            "labs": { // This is a nested lab group, treated like a "building"
+                            "labs": { // This is a nested lab group
                                 "Bulge": {"items": []},
                                 "Flatness": {"items": []},
                                 "Offset": {"items": []},
@@ -1088,7 +1096,7 @@
             </div>
         `;
 
-        // --- NEW Assign Lab Properties Content ---
+        // --- Assign Lab Properties Content ---
         const assignLabPropertiesContent = `
             <div class="form-container">
                 <!-- Dropdown 1: Select Lab -->
@@ -1120,9 +1128,9 @@
                     </select>
                 </div>
 
-                <!-- Dropdown 4: Select Building (Multi-Select) -->
+                <!-- Dropdown 4: Select Building/Group (Multi-Select) -->
                 <div class="form-group">
-                    <label>Select Building</label>
+                    <label>Select Building / Group</label>
                     <div class="custom-multiselect disabled" id="select-building-wrapper">
                         <div class="multiselect-display">
                             <span class="multiselect-text placeholder">Select</span>
@@ -1364,7 +1372,7 @@
                          if(parentToggle) {
                             parentToggle.classList.add('open');
                             parentToggle.querySelector('.nav-toggle').classList.add('active');
-                        }
+                         }
                     }
                 }
             }
@@ -1398,12 +1406,27 @@
                 }
             }
             
-            // --- Toast Notification ---
-            function showToast(message) {
+            // --- Toast Notification (IMPROVED) ---
+            function showToast(message, type = 'success') {
                 const toast = document.getElementById('toast-notification');
                 const toastMessage = document.getElementById('toast-message');
+                const toastIcon = toast.querySelector('i');
                 
                 toastMessage.textContent = message;
+                
+                // Reset classes
+                toast.classList.remove('success', 'error');
+                toastIcon.className = ''; // Clear all icon classes
+
+                // Apply new classes based on type
+                if (type === 'error') {
+                    toast.classList.add('error');
+                    toastIcon.classList.add('fa-solid', 'fa-times-circle');
+                } else {
+                    toast.classList.add('success');
+                    toastIcon.classList.add('fa-solid', 'fa-check-circle');
+                }
+                
                 toast.classList.add('show');
                 
                 setTimeout(() => {
@@ -1505,16 +1528,21 @@
                 try {
                     const response = await retryFetch(apiUrl, fetchOptions);
                     const result = await response.json();
-                    const candidate = result.candidates?.[0];
 
-                    if (candidate && candidate.content?.parts?.[0]?.text) {
-                        const text = candidate.content.parts[0].text;
-                        resultElement.value = text;
-                        if(saveButton) saveButton.style.display = 'inline-block';
+                    // --- IMPROVED: More robust response check ---
+                    if (result.candidates && result.candidates.length > 0) {
+                        const candidate = result.candidates[0];
+                        if (candidate.content?.parts?.[0]?.text) {
+                            const text = candidate.content.parts[0].text;
+                            resultElement.value = text;
+                            if(saveButton) saveButton.style.display = 'inline-block';
+                        } else {
+                            throw new Error("API returned a candidate but no text content.");
+                        }
                     } else if (result.error) {
-                         throw new Error(result.error.message);
+                        throw new Error(result.error.message);
                     } else {
-                        throw new Error("Invalid response structure from API.");
+                        throw new Error("Invalid response structure or no content generated.");
                     }
 
                 } catch (error) {
@@ -1537,7 +1565,7 @@
                 
                 const userPrompt = promptElement.value;
                 if (!userPrompt.trim()) {
-                    showToast('Please describe the workflow goal.');
+                    showToast('Please describe the workflow goal.', 'error');
                     return;
                 }
 
@@ -1557,7 +1585,7 @@
 
                 const userPrompt = promptElement.value;
                 if (!userPrompt.trim()) {
-                    showToast("Please describe the email's purpose.");
+                    showToast("Please describe the email's purpose.", 'error');
                     return;
                 }
 
@@ -1626,67 +1654,69 @@
                  list.innerHTML = ''; // Clear list
                 
                  if (savedEmailTemplates.length === 0) {
-                    list.appendChild(placeholder);
+                     list.appendChild(placeholder);
                  } else {
-                    savedEmailTemplates.forEach(email => {
-                        const item = document.createElement('div');
-                        item.className = 'saved-item email';
-                        item.innerHTML = `
-                            <span class="item-title">${email.subject}</span>
-                            <span class="item-body">${email.body.split('\n')[0]}</span>
-                        `;
-                        list.appendChild(item);
-                    });
-                }
+                     savedEmailTemplates.forEach(email => {
+                         const item = document.createElement('div');
+                         item.className = 'saved-item email';
+                         item.innerHTML = `
+                             <span class="item-title">${email.subject}</span>
+                             <span class="item-body">${email.body.split('\n')[0]}</span>
+                         `;
+                         list.appendChild(item);
+                     });
+                 }
             }
             
-            // --- Save Assign Lab Properties ---
+            // --- Save Assign Lab Properties (IMPROVED) ---
             function handleSaveAssignLab() {
                 const button = document.getElementById('save-lab-settings');
                 button.classList.add('loading');
                 button.disabled = true;
+
+                // --- NEW: Gather all selected data ---
+                const selectedLabId = document.getElementById('select-lab').value;
+                const selectedLabText = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].text;
+                const selectedPlants = getMultiSelectValues('select-plant-options');
+                const selectedSection = document.getElementById('select-section').value;
+                const selectedBuildings = getMultiSelectValues('select-building-options');
+                const selectedItem = document.getElementById('select-items-to-add').value;
+
+                // Check for completion before saving
+                if (!selectedLabId || selectedPlants.length === 0 || !selectedSection || !selectedItem) {
+                    showToast('Please fill out all fields.', 'error');
+                    button.classList.remove('loading');
+                    button.disabled = false;
+                    return;
+                }
+
+                const saveData = {
+                    labId: selectedLabId,
+                    labPath: selectedLabText,
+                    plants: selectedPlants,
+                    section: selectedSection,
+                    // Handle "no building" case (e.g. Fernley) vs. selected buildings
+                    buildingsOrGroups: selectedBuildings.length > 0 ? selectedBuildings : "N/A",
+                    itemToAdd: selectedItem
+                };
+
+                // Log the data to the console for this prototype
+                console.log("Saving Lab Settings:", saveData);
+                // --- End new logic ---
                 
                 // Simulate network request
                 setTimeout(() => {
                     button.classList.remove('loading');
                     button.disabled = false;
                     showToast('Settings saved successfully!');
+                    // To-do: Reset the form or navigate away
                 }, 1500);
             }
 
 
             // --- Custom Multi-Select Dropdown Logic ---
-            // This is the generic initializer
-            function initializeMultiSelects() {
-                document.querySelectorAll('.custom-multiselect:not(.lab-property-form)').forEach(container => {
-                    const display = container.querySelector('.multiselect-display');
-                    const options = container.querySelectorAll('.multiselect-option input[type="checkbox"]');
-                    
-                    // Toggle dropdown
-                    display.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        // Close other dropdowns
-                        document.querySelectorAll('.custom-multiselect.open').forEach(openDropdown => {
-                            if (openDropdown !== container) {
-                                openDropdown.classList.remove('open');
-                            }
-                        });
-                        container.classList.toggle('open');
-                    });
-                    
-                    // Update text on checkbox change
-                    options.forEach(option => {
-                        option.addEventListener('change', () => {
-                            updateMultiselectText(container);
-                        });
-                    });
-                    
-                    // Initial text update
-                    updateMultiselectText(container);
-                });
-            }
-
-            // MODIFIED: updateMultiselectText to show comma-separated list
+            
+            // MODIFIED: updateMultiselectText to be more logical
             function updateMultiselectText(container) {
                 const options = container.querySelectorAll('.multiselect-option input[type="checkbox"]');
                 const textElement = container.querySelector('.multiselect-text');
@@ -1696,14 +1726,14 @@
                 if (selectedOptions.length === 0) {
                     textElement.textContent = 'None selected';
                     textElement.classList.add('placeholder');
-                } else {
+                } else if (selectedOptions.length <= 3) {
+                    // Join 1, 2, or 3 names
+                    textElement.textContent = selectedOptions.map(opt => opt.nextElementSibling.textContent).join(', ');
                     textElement.classList.remove('placeholder');
-                    let text = selectedOptions.map(opt => opt.nextElementSibling.textContent).join(', ');
-                    if (text.length > 25) { // Truncate if too long
-                        textElement.textContent = `${selectedOptions.length} selected`;
-                    } else {
-                        textElement.textContent = text;
-                    }
+                } else {
+                    // Show "4 selected", "5 selected", etc.
+                    textElement.textContent = `${selectedOptions.length} selected`;
+                    textElement.classList.remove('placeholder');
                 }
             }
             
@@ -1714,73 +1744,64 @@
                 });
             });
 
-            // --- NEW: Assign Lab Properties Page Logic ---
+            // --- Assign Lab Properties Page Logic (IMPROVED) ---
             
+            /**
+             * This is the main initializer for the "Assign Lab Properties" page.
+             * It builds the flat lab database and sets up the first dropdown.
+             */
             function initializeAssignLabPage() {
                 // 1. Flatten the lab data for easy lookup
                 flatLabDatabase = [];
+                
+                /**
+                 * Helper to recursively parse labs from the plantData object.
+                 * This handles labs at any level (section, building, or nested group).
+                 */
+                function parseLabs(labData, plant, section, groupPath = null) {
+                    Object.keys(labData).forEach(labName => {
+                        // Check for nested lab groups (e.g., "Retest")
+                        if (labData[labName].labs) {
+                            // This is a subgroup. Recursively parse *its* labs, appending to the group path.
+                            const newGroupPath = groupPath ? `${groupPath} > ${labName}` : labName;
+                            parseLabs(labData[labName].labs, plant, section, newGroupPath);
+                        } else {
+                            // This is a standard lab
+                            const pathParts = [plant, section];
+                            if (groupPath) pathParts.push(groupPath);
+                            pathParts.push(labName);
+
+                            flatLabDatabase.push({
+                                id: pathParts.join('_').replace(/ > /g, '_'), // Create a unique ID
+                                name: labName,
+                                plant: plant,
+                                section: section,
+                                buildingOrGroup: groupPath, // Stores "Building 1", "Retest", "Building 1 > Retest", or null
+                                path: `${labName} (${pathParts.join(' > ')})` // Full display path
+                            });
+                        }
+                    });
+                }
+
+                // Iterate over the main plantData object
                 Object.keys(plantData).forEach(plantName => {
                     Object.keys(plantData[plantName]).forEach(sectionName => {
                         const section = plantData[plantName][sectionName];
                         
-                        // Case 1: Labs directly under section (e.g., Fernley > Decking)
-                        if (section.labs && Object.keys(section.buildings).length === 0) {
-                            Object.keys(section.labs).forEach(labName => {
-                                if (labName === "Retest") { // Handle nested "Retest" group
-                                    Object.keys(section.labs.Retest.labs).forEach(retestLabName => {
-                                        flatLabDatabase.push({
-                                            id: `${plantName}_${sectionName}_Retest_${retestLabName}`,
-                                            name: retestLabName,
-                                            plant: plantName,
-                                            section: sectionName,
-                                            building: "Retest", // Treat "Retest" as a building/group
-                                            path: `${retestLabName} (${plantName} > ${sectionName} > Retest)`
-                                        });
-                                    });
-                                } else {
-                                    flatLabDatabase.push({
-                                        id: `${plantName}_${sectionName}_${labName}`,
-                                        name: labName,
-                                        plant: plantName,
-                                        section: sectionName,
-                                        building: null,
-                                        path: `${labName} (${plantName} > ${sectionName})`
-                                    });
-                                }
-                            });
+                        // Case 1: Labs directly under section (e.g., Fernley > Decking, which has no buildings)
+                        if (Object.keys(section.buildings).length === 0 && section.labs) {
+                            parseLabs(section.labs, plantName, sectionName, null);
                         }
-
+                        
                         // Case 2: Labs under buildings (e.g., Winchester > Decking)
-                        if (section.buildings) {
-                             Object.keys(section.buildings).forEach(buildingName => {
+                        if (Object.keys(section.buildings).length > 0) {
+                            Object.keys(section.buildings).forEach(buildingName => {
                                 const building = section.buildings[buildingName];
                                 if (building.labs) {
-                                    Object.keys(building.labs).forEach(labName => {
-                                        if (labName === "Retest") { // Handle nested "Retest" group
-                                            Object.keys(building.labs.Retest.labs).forEach(retestLabName => {
-                                                flatLabDatabase.push({
-                                                    id: `${plantName}_${sectionName}_${buildingName}_Retest_${retestLabName}`,
-                                                    name: retestLabName,
-                                                    plant: plantName,
-                                                    section: sectionName,
-                                                    building: buildingName,
-                                                    subgroup: "Retest", // Special subgroup
-                                                    path: `${retestLabName} (${plantName} > ${sectionName} > ${buildingName} > Retest)`
-                                                });
-                                            });
-                                        } else {
-                                             flatLabDatabase.push({
-                                                id: `${plantName}_${sectionName}_${buildingName}_${labName}`,
-                                                name: labName,
-                                                plant: plantName,
-                                                section: sectionName,
-                                                building: buildingName,
-                                                path: `${labName} (${plantName} > ${sectionName} > ${buildingName})`
-                                            });
-                                        }
-                                    });
+                                    // Pass the building name as the top-level group path
+                                    parseLabs(building.labs, plantName, sectionName, buildingName);
                                 }
-                             });
+                            });
                         }
                     });
                 });
@@ -1788,6 +1809,8 @@
                 // 2. Populate the initial Lab dropdown
                 const labSelect = document.getElementById('select-lab');
                 labSelect.innerHTML = '<option value="" selected>Select</option>'; // Reset
+                
+                // Get unique labs based on their full display path
                 const uniqueLabs = [...new Map(flatLabDatabase.map(lab => [lab.path, lab])).values()];
                 uniqueLabs.sort((a,b) => a.path.localeCompare(b.path)); // Sort alphabetically
                 
@@ -1801,13 +1824,14 @@
 
                 // 3. Add event listeners for cascading logic
                 labSelect.addEventListener('change', onLabChange);
-                
-                // Plant and Building are multi-select, their listeners are added dynamically
-                
                 document.getElementById('select-section').addEventListener('change', onSectionChange);
                 document.getElementById('select-items-to-add').addEventListener('change', onItemsChange);
             }
 
+            /**
+             * Called when the main "Select Lab" dropdown changes.
+             * Populates the "Select Plant" multi-select.
+             */
             function onLabChange(e) {
                 const selectedLabId = e.target.value;
                 const selectedLabName = e.target.options[e.target.selectedIndex].dataset.labName;
@@ -1815,6 +1839,7 @@
                 const plantSelectWrapper = document.getElementById('select-plant-wrapper');
                 const plantOptionsContainer = document.getElementById('select-plant-options');
                 
+                // Reset all subsequent dropdowns
                 resetMultiSelect('select-plant-wrapper', 'Select');
                 resetDropdown('select-section', 'Select');
                 resetMultiSelect('select-building-wrapper', 'Select');
@@ -1854,15 +1879,20 @@
                 // Initialize multi-select interaction
                 initializeMultiSelect(plantSelectWrapper.id);
                 // Trigger change to update text and cascade
-                onPlantChange(); 
+                onPlantChange();    
             }
 
+            /**
+             * Called when the "Select Plant" multi-select changes.
+             * Populates the "Select Section" dropdown.
+             */
             function onPlantChange() {
                 const selectedLabName = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].dataset.labName;
                 
                 const selectedPlants = getMultiSelectValues('select-plant-options');
                 const sectionSelect = document.getElementById('select-section');
 
+                // Reset subsequent dropdowns
                 resetDropdown('select-section', 'Select');
                 resetMultiSelect('select-building-wrapper', 'Select');
                 resetDropdown('select-items-to-add', 'Select');
@@ -1874,7 +1904,7 @@
 
                 // Find sections in the selected plants that contain the selected lab
                 const relevantSections = [...new Set(flatLabDatabase
-                    .filter(lab => 
+                    .filter(lab =>    
                         lab.name === selectedLabName &&
                         selectedPlants.includes(lab.plant)
                     )
@@ -1896,6 +1926,10 @@
                 }
             }
 
+            /**
+             * Called when the "Select Section" dropdown changes.
+             * Populates the "Select Building / Group" multi-select.
+             */
             function onSectionChange(e) {
                 const selectedSection = e.target.value;
                 const selectedLabName = document.getElementById('select-lab').options[document.getElementById('select-lab').selectedIndex].dataset.labName;
@@ -1904,6 +1938,7 @@
                 const buildingSelectWrapper = document.getElementById('select-building-wrapper');
                 const buildingOptionsContainer = document.getElementById('select-building-options');
                 
+                // Reset subsequent dropdowns
                 resetMultiSelect('select-building-wrapper', 'Select');
                 resetDropdown('select-items-to-add', 'Select');
 
@@ -1912,25 +1947,25 @@
                     return;
                 }
                 
-                // Find buildings (or subgroups like "Retest")
-                const relevantBuildings = [...new Set(flatLabDatabase
-                    .filter(lab => 
+                // Find buildings or groups (e.g., "Retest", "Building 1 > Retest")
+                const relevantBuildingsOrGroups = [...new Set(flatLabDatabase
+                    .filter(lab =>    
                         lab.name === selectedLabName &&
                         selectedPlants.includes(lab.plant) &&
                         lab.section === selectedSection &&
-                        (lab.building || lab.subgroup) // Has a building or a subgroup
+                        lab.buildingOrGroup // Check if this field is not null
                     )
-                    .map(lab => lab.subgroup ? lab.subgroup : lab.building) // Prioritize subgroup name if it exists
+                    .map(lab => lab.buildingOrGroup)
                 )];
 
                 buildingOptionsContainer.innerHTML = ''; // Clear options
 
-                if (relevantBuildings.length > 0) {
-                    relevantBuildings.forEach(buildingName => {
+                if (relevantBuildingsOrGroups.length > 0) {
+                    relevantBuildingsOrGroups.forEach(groupName => {
                         const optionHTML = `
                             <label class="multiselect-option">
-                                <input type="checkbox" value="${buildingName}" checked>
-                                <span>${buildingName}</span>
+                                <input type="checkbox" value="${groupName}" checked>
+                                <span>${groupName}</span>
                             </label>
                         `;
                         buildingOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
@@ -1953,6 +1988,10 @@
                 onBuildingChange(); // Trigger update
             }
 
+            /**
+             * Called when the "Select Building" multi-select changes.
+             * Populates the "Select Items to Add" dropdown.
+             */
             function onBuildingChange() {
                 const itemsSelect = document.getElementById('select-items-to-add');
                 const selectedBuildings = getMultiSelectValues('select-building-options');
@@ -1968,7 +2007,12 @@
                     itemsSelect.disabled = false;
                     resetDropdown('select-items-to-add', 'Select'); // Keep placeholder
                     // To-do: Populate with actual items
-                    
+                    // For demo, re-add placeholders
+                    itemsSelect.innerHTML = `
+                        <option value="" selected>Select</option>
+                        <option value="item1">Item 1 (Placeholder)</option>
+                        <option value="item2">Item 2 (Placeholder)</option>
+                    `;
                 } else {
                     itemsSelect.disabled = true;
                     resetDropdown('select-items-to-add', 'Select');
@@ -1979,8 +2023,11 @@
                 // Logic when "Items to Add" is changed
             }
 
-            // --- Multi-Select Helper Functions (New) ---
+            // --- Multi-Select Helper Functions ---
 
+            /**
+             * Initializes the open/close behavior for a *single* multi-select dropdown.
+             */
             function initializeMultiSelect(wrapperId) {
                 const container = document.getElementById(wrapperId);
                 if (!container) return;
@@ -2004,11 +2051,17 @@
                 updateMultiselectText(container);
             }
             
+            /**
+             * Gets an array of checked values from a multi-select options container.
+             */
             function getMultiSelectValues(optionsContainerId) {
                 return Array.from(document.querySelectorAll(`#${optionsContainerId} input[type="checkbox"]:checked`))
                     .map(cb => cb.value);
             }
 
+            /**
+             * Resets a standard <select> dropdown.
+             */
             function resetDropdown(selectId, placeholderText) {
                 const select = document.getElementById(selectId);
                 if (select) {
@@ -2017,6 +2070,9 @@
                 }
             }
             
+            /**
+             * Resets a custom multi-select dropdown.
+             */
             function resetMultiSelect(wrapperId, placeholderText) {
                 const wrapper = document.getElementById(wrapperId);
                 const optionsContainer = document.getElementById(wrapperId.replace('-wrapper', '-options'));
@@ -2036,19 +2092,10 @@
             }
 
             // --- Initial Load ---
-            buildFlatLabDB(); // Build the flat lab DB on initial script load
             loadLogoFromStorage(); // Load logo for sidebar on initial load
             loadPage('Plant Dashboard', dashboardContent, 'dashboard'); // Load default page
-            
-            
-            function buildFlatLabDB() {
-                // This function is now run inside initializeAssignLabPage to ensure it runs
-                // when the page is loaded, not just on script init.
-                // We keep a global `flatLabDatabase` variable.
-            }
             
         });
     </script>
 </body>
 </html>
-
